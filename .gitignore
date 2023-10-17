@@ -1,0 +1,5 @@
+*.bak
+*.vsidx
+.vs
+obj
+bin
