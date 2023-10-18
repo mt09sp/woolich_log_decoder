@@ -1,0 +1,2 @@
+MainPackage=D:\github_projects\woolich_log_decoder\WoolichDecoderWapProject\bin\AnyCPU\Release\WoolichDecoderWapProject_1.0.0.0_AnyCPU.appx
+SymbolPackage=D:\github_projects\woolich_log_decoder\WoolichDecoderWapProject\obj\Release\Symbols\WoolichDecoderWapProject_1.0.0.0_AnyCPU.appxsym
