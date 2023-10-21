@@ -118,8 +118,8 @@ jobs:
     #   Configuration: ${{ matrix.configuration }}
 
     # Remove the pfx
-    - name: Remove the pfx
-      run: Remove-Item -path $env:Wap_Project_Directory\GitHubActionsWorkflow.pfx
+    # - name: Remove the pfx
+    #  run: Remove-Item -path $env:Wap_Project_Directory\GitHubActionsWorkflow.pfx
 
     # Upload the MSIX package: https://github.com/marketplace/actions/upload-a-build-artifact
     # - name: Upload build artifacts
@@ -127,3 +127,9 @@ jobs:
     #  with:
     #    name: MSIX Package
     #    path: ${{ env.Wap_Project_Directory }}\AppPackages
+
+    - name: Copy Artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: Woolich Decoder Executable
+        path: WoolichDecoder\bin\Release\app.publish\WoolichDecoder.exe
