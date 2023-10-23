@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Eventing.Reader;
 using System.Drawing;
 using System.IO;
@@ -716,43 +717,6 @@ namespace WoolichDecoder
         }
 
 
-        /*
-        Replaced with extension methods
-        private static string getWheelSpeed(int wheelSpeedSensor, double wheelSpeedSensorTicks)
-        {
-            return Math.Round(wheelSpeedSensor / wheelSpeedSensorTicks).ToString();
-        }
-
-        private static string getTrueTPS(int col12and13)
-        {
-            var trueTPS = Math.Round(((double)col12and13 / 7.39), 2);
-            if (trueTPS > 100)
-            {
-                return "100";
-            }
-            return trueTPS.ToString();
-        }
-
-
-        // There's has been some rounding going on here. The pressure may influence the starting value.
-        // There will always be a proportion of it that's open. Just for idling. That's the 34. and in another one it's 38.
-        private static string getWoolichETV(byte col18)
-        {
-            //var ETV = Math.Round(((double)col18 - 38) / 1.6575, 2);
-            var ETV = Math.Round(((double)col18 - 34) / 1.836, 2);
-            return ETV.ToString();
-        }
-
-        private static string getWoolichTPS(byte col15)
-        {
-            var TPS = Math.Round(((double)col15 / 1.74), 2);
-            if (TPS > 100)
-            {
-                return "100";
-            }
-            return TPS.ToString();
-        }
-        */
 
         private void btnAutoTuneExport_Click(object sender, EventArgs e)
         {
@@ -770,13 +734,23 @@ namespace WoolichDecoder
                 foreach (var packet in exportItem.GetPackets())
                 {
 
-                    if (packet.Value.getGear() <= 2)
+                    if (packet.Value.getGear() == 2 || packet.Value.getGear() == 0)
                     {
-                        // We aren't interested in idle and first gear modifications.
+                        // 2nd gear is just for slow speed tight corners.
+                        // 0 gear is neutral
                         continue;
                     }
 
-                    if (packet.Value.getRPM() <= 1200)
+                    if (packet.Value.getGear() == 1 && ( packet.Value.getRPM() < 1000 || packet.Value.getRPM() > 4500))
+                    {
+                        // We don't want first gear but we do want launch RPM ranges
+                        // Exclude anything outside of the launch ranges.
+                        continue;
+                    }
+
+
+                    // Get rid of anything 
+                    if (packet.Value.getGear() != 1 && packet.Value.getRPM() <= 1200)
                     {
                         // We aren't interested in below idle changes.
                         continue;
@@ -802,7 +776,7 @@ namespace WoolichDecoder
                     binWriter.Write(exportPackets);
                 }
                 binWriter.Close();
-                log($"Autotune log write complete?");
+                log($"Autotune log write is complete?");
             }
             catch
             {
