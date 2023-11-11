@@ -48,13 +48,14 @@
             // 
             // txtLogging
             // 
-            this.txtLogging.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.txtLogging.Location = new System.Drawing.Point(843, 10);
+            this.txtLogging.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.txtLogging.Location = new System.Drawing.Point(843, 59);
             this.txtLogging.Margin = new System.Windows.Forms.Padding(2);
             this.txtLogging.Multiline = true;
             this.txtLogging.Name = "txtLogging";
             this.txtLogging.ScrollBars = System.Windows.Forms.ScrollBars.Both;
-            this.txtLogging.Size = new System.Drawing.Size(344, 434);
+            this.txtLogging.Size = new System.Drawing.Size(344, 516);
             this.txtLogging.TabIndex = 1;
             // 
             // btnOpenFile
@@ -96,11 +97,14 @@
             // 
             // txtFeedback
             // 
-            this.txtFeedback.Location = new System.Drawing.Point(432, 10);
+            this.txtFeedback.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.txtFeedback.Location = new System.Drawing.Point(432, 59);
             this.txtFeedback.Margin = new System.Windows.Forms.Padding(2);
             this.txtFeedback.Multiline = true;
             this.txtFeedback.Name = "txtFeedback";
-            this.txtFeedback.Size = new System.Drawing.Size(408, 434);
+            this.txtFeedback.Size = new System.Drawing.Size(407, 516);
             this.txtFeedback.TabIndex = 5;
             // 
             // txtBreakOnChange
@@ -232,6 +236,7 @@
             this.MinimumSize = new System.Drawing.Size(1129, 625);
             this.Name = "WoolichFileDecoderForm";
             this.Text = "Woolich File Decoder";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.WoolichFileDecoderForm_FormClosing);
             this.Load += new System.EventHandler(this.WoolichFileDecoder_Load);
             this.ResumeLayout(false);
             this.PerformLayout();

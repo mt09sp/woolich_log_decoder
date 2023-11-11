@@ -13,6 +13,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using WoolichDecoder.Models;
+using WoolichDecoder.Settings;
 using static System.Windows.Forms.LinkLabel;
 
 namespace WoolichDecoder
@@ -24,8 +25,12 @@ namespace WoolichDecoder
 
         WoolichMT09Log exportLogs = new WoolichMT09Log();
 
+        UserSettings userSettings;
+
         string outputFileNameWithoutExtension = string.Empty;
         string outputFileNameWithExtension = string.Empty;
+
+        string logFolder = string.Empty;
 
         // hours: 5
         // min: 6
@@ -137,6 +142,19 @@ namespace WoolichDecoder
 
         private void WoolichFileDecoder_Load(object sender, EventArgs e)
         {
+            userSettings = new UserSettings();
+
+
+            string logFileLocation = userSettings.LogDirectory;
+            //Since there is no default value for FormText.
+            if (logFileLocation != null)
+            {
+                this.logFolder = logFileLocation;
+            }
+            else
+            {
+                this.logFolder = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            }
 
         }
 
@@ -148,7 +166,7 @@ namespace WoolichDecoder
             if (string.IsNullOrWhiteSpace(this.openWRLFileDialog.InitialDirectory))
             {
 
-                this.openWRLFileDialog.InitialDirectory = Directory.GetCurrentDirectory();
+                this.openWRLFileDialog.InitialDirectory = this.logFolder ?? Directory.GetCurrentDirectory();
             }
 
             this.openWRLFileDialog.Multiselect = false;
@@ -165,11 +183,17 @@ namespace WoolichDecoder
             Array.Clear(logs.PrimaryHeaderData, 0, logs.PrimaryHeaderData.Length);
             Array.Clear(logs.SecondaryHeaderData, 0, logs.SecondaryHeaderData.Length);
 
+
+
+
             string path = string.Empty;
             string binOutputFileName = string.Empty;
             string inputFileName = string.Empty;
             if (File.Exists(filename))
             {
+                this.logFolder = Path.GetDirectoryName(filename);
+                this.openWRLFileDialog.InitialDirectory = this.logFolder;
+
                 outputFileNameWithoutExtension = Path.GetDirectoryName(filename) + "\\" + Path.GetFileNameWithoutExtension(filename);
                 binOutputFileName = Path.GetDirectoryName(filename) + "\\" + Path.GetFileNameWithoutExtension(filename) + ".bin";
                 // outputFileName = Path.GetFileNameWithoutExtension(filename) + ".sql";
@@ -734,42 +758,83 @@ namespace WoolichDecoder
                 foreach (var packet in exportItem.GetPackets())
                 {
 
-                    if (packet.Value.getGear() == 2 || packet.Value.getGear() == 0)
+                    // break the reference
+                    byte[] exportPackets = packet.Value.ToArray();
+
+                    int diff = 0;
+                    // I'm going to change the approach to this... Rather than eliminate the record i'm going to make it one that woolich will filter out.
+                    // The reason for this is that we may drop an AFR record for a prior record.
+                    // Options are:
+                    // Temperature
+                    // gear
+                    // clutch
+                    // 0 RPM
+                    // I'm choosing gear first. Lets make it 0
+                    var outputGear = packet.Value.getGear();
+
+
+                    if (outputGear == 2)
                     {
                         // 2nd gear is just for slow speed tight corners.
-                        // 0 gear is neutral
-                        continue;
+                        // 0 gear is neutral and is supposed to be filterable in autotune.
+
+                        // adjust the gear packet to make woolich autotune filter it out.
+                        byte newOutputGearByte = (byte)(exportPackets[24] & (~0b00000111));
+                        diff = diff + newOutputGearByte - outputGear;
+                        outputGear = newOutputGearByte;
+                        exportPackets[24] = newOutputGearByte;
+
+                        // continue;
                     }
 
-                    if (packet.Value.getGear() == 1 && ( packet.Value.getRPM() < 1000 || packet.Value.getRPM() > 4500))
+                    if (outputGear == 1 && ( packet.Value.getRPM() < 1000 || packet.Value.getRPM() > 4500))
                     {
                         // We don't want first gear but we do want launch RPM ranges
                         // Exclude anything outside of the launch ranges.
-                        continue;
+
+                        byte newOutputGearByte = (byte)(exportPackets[24] & (~0b00000111));
+                        diff = diff + newOutputGearByte - outputGear;
+                        outputGear = newOutputGearByte;
+                        exportPackets[24] = newOutputGearByte;
+
+
+
+                        // continue;
                     }
 
 
                     // Get rid of anything 
-                    if (packet.Value.getGear() != 1 && packet.Value.getRPM() <= 1200)
+                    if (outputGear != 1 && packet.Value.getRPM() <= 1200)
                     {
                         // We aren't interested in below idle changes.
-                        continue;
+
+                        byte newOutputGearByte = (byte)(exportPackets[24] & (~0b00000111));
+                        diff = diff + newOutputGearByte - outputGear;
+                        outputGear = newOutputGearByte;
+                        exportPackets[24] = newOutputGearByte;
+
+                        // continue;
                     }
 
                     // This one is tricky due to wooliches error in decoding the etv packet.
-                    if (packet.Value.getCorrectETV() <= 1.2)
+                    if (packet.Value.getCorrectETV() <= 1.2 && outputGear < 4)
                     {
                         // We aren't interested closed throttle engine braking.
-                        continue;
+
+                        byte newOutputGearByte = (byte)(exportPackets[24] & (~0b00000111));
+                        diff = diff + newOutputGearByte - outputGear;
+                        outputGear = newOutputGearByte;
+                        exportPackets[24] = newOutputGearByte;
+
+                        // continue;
                     }
 
-                    // break the reference
-                    byte[] exportPackets = packet.Value.ToArray();
+
 
                     // adjust the etv packet to make woolich put it in the right place.
                     double correctETV = exportPackets.getCorrectETV();
                     byte hackedETVbyte = (byte)((correctETV * 1.66) + 38);
-                    int diff = hackedETVbyte - exportPackets[18];
+                    diff = diff + hackedETVbyte - exportPackets[18];
                     exportPackets[18] = hackedETVbyte;
                     exportPackets[95] += (byte)diff;
 
@@ -821,6 +886,14 @@ namespace WoolichDecoder
         private void label2_Click(object sender, EventArgs e)
         {
 
+        }
+
+        private void WoolichFileDecoderForm_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            userSettings.LogDirectory = this.logFolder;
+
+            // save the user settings.
+            userSettings.Save();
         }
     }
 }
