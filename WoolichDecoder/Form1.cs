@@ -32,6 +32,19 @@ namespace WoolichDecoder
 
         string logFolder = string.Empty;
 
+
+        string[] autoTuneFilterOptions =
+        {
+            "MT09 ETV correction",
+            "Remove Gear 2 logs",
+            "Exclude below 1200 rpm",
+            "Remove Gear 1, 2 & 3 engine braking",
+            "Remove non launch gear 1"
+        };
+
+
+
+
         // hours: 5
         // min: 6
         // seconds: 7
@@ -154,6 +167,14 @@ namespace WoolichDecoder
             else
             {
                 this.logFolder = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            }
+
+            this.aTFCheckedListBox.Items.AddRange(autoTuneFilterOptions.ToArray());
+
+
+            for (int i = 0; i < this.aTFCheckedListBox.Items.Count; i++)
+            {
+                aTFCheckedListBox.SetItemCheckState(i, CheckState.Checked);
             }
 
         }
@@ -749,6 +770,15 @@ namespace WoolichDecoder
             try
             {
 
+                List<string> selectedFilterOptions = new List<string>();
+
+                var selectedCount = this.aTFCheckedListBox.CheckedItems.Count;
+
+                for (int i = 0; i < this.aTFCheckedListBox.CheckedItems.Count; i++)
+                {
+                    selectedFilterOptions.Add(this.aTFCheckedListBox.CheckedItems[i].ToString());
+                }
+
                 // Trial output to file...
                 BinaryWriter binWriter = new BinaryWriter(File.Open(outputFileNameWithExtension, FileMode.Create));
                 // push to disk
@@ -772,8 +802,18 @@ namespace WoolichDecoder
                     // I'm choosing gear first. Lets make it 0
                     var outputGear = packet.Value.getGear();
 
+                    // {
+                    // 0 "MT09 ETV correction",
+                    // 1 "Remove Gear 2 logs",
+                    // 2 "Exclude below 1200 rpm",
+                    // 3 "Remove Gear 1, 2 & 3 engine braking",
+                    // 4 "Remove non launch gear 1"
+                    // };
 
-                    if (outputGear == 2)
+
+
+                    // "Remove Gear 2 logs"
+                    if (outputGear == 2 && selectedFilterOptions.Contains(autoTuneFilterOptions[1]))
                     {
                         // 2nd gear is just for slow speed tight corners.
                         // 0 gear is neutral and is supposed to be filterable in autotune.
@@ -787,7 +827,8 @@ namespace WoolichDecoder
                         // continue;
                     }
 
-                    if (outputGear == 1 && ( packet.Value.getRPM() < 1000 || packet.Value.getRPM() > 4500))
+                    // 4 "Remove non launch gear 1"
+                    if (outputGear == 1 && (packet.Value.getRPM() < 1000 || packet.Value.getRPM() > 4500) && selectedFilterOptions.Contains(autoTuneFilterOptions[4]))
                     {
                         // We don't want first gear but we do want launch RPM ranges
                         // Exclude anything outside of the launch ranges.
@@ -803,8 +844,9 @@ namespace WoolichDecoder
                     }
 
 
-                    // Get rid of anything 
-                    if (outputGear != 1 && packet.Value.getRPM() <= 1200)
+                    // Get rid of anything below 1200 RPM
+                    // 2 "Exclude below 1200 rpm"
+                    if (outputGear != 1 && packet.Value.getRPM() <= 1200 && selectedFilterOptions.Contains(autoTuneFilterOptions[2]))
                     {
                         // We aren't interested in below idle changes.
 
@@ -817,7 +859,8 @@ namespace WoolichDecoder
                     }
 
                     // This one is tricky due to wooliches error in decoding the etv packet.
-                    if (packet.Value.getCorrectETV() <= 1.2 && outputGear < 4)
+                    // 3 "Remove Gear 1, 2 & 3 engine braking",
+                    if (packet.Value.getCorrectETV() <= 1.2 && outputGear < 4 && selectedFilterOptions.Contains(autoTuneFilterOptions[3]))
                     {
                         // We aren't interested closed throttle engine braking.
 
@@ -830,12 +873,14 @@ namespace WoolichDecoder
                     }
 
 
-
-                    // adjust the etv packet to make woolich put it in the right place.
-                    double correctETV = exportPackets.getCorrectETV();
-                    byte hackedETVbyte = (byte)((correctETV * 1.66) + 38);
-                    diff = diff + hackedETVbyte - exportPackets[18];
-                    exportPackets[18] = hackedETVbyte;
+                    if (selectedFilterOptions.Contains(autoTuneFilterOptions[0]))
+                    {
+                        // adjust the etv packet to make woolich put it in the right place.
+                        double correctETV = exportPackets.getCorrectETV();
+                        byte hackedETVbyte = (byte)((correctETV * 1.66) + 38);
+                        diff = diff + hackedETVbyte - exportPackets[18];
+                        exportPackets[18] = hackedETVbyte;
+                    }
                     exportPackets[95] += (byte)diff;
 
                     binWriter.Write(exportPackets);
@@ -894,6 +939,16 @@ namespace WoolichDecoder
 
             // save the user settings.
             userSettings.Save();
+        }
+
+        private void label3_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void aTFCheckedListBox_SelectedIndexChanged(object sender, EventArgs e)
+        {
+
         }
     }
 }
