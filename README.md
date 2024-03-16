@@ -49,3 +49,9 @@ The repo is obviously a simple winforms application in c#. That's because I need
 TODO:
 Implement some CI/CD mechanisms and an installer bundle once I work out how. It's my first time with public repos :-)
 
+*****************************************************************************************************************************************************************************
+I hope my log files help. I hope ive done this correct.. AND Thank you, my first fork and merg :)
+2015 R1m, Logged with ADDED Zeitronix ZT-3 Wideband (Air+fuel ratio) Lambda Meter 
+There are lots we can discuss, lots to change i mean FIX!
+Best regards
+Omega Alpha
