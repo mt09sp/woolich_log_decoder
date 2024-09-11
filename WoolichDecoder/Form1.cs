@@ -20,6 +20,16 @@ namespace WoolichDecoder
 {
     public partial class WoolichFileDecoderForm : Form
     {
+        public static class LogPrefix
+        {
+            // Date and Time format
+            private static readonly string DateTimeFormat = "yyyy-MM-dd HH:mm:ss";
+
+            // Generate prefix with date, time and string
+            public static string Prefix => $"{DateTime.Now.ToString(DateTimeFormat)} -- ";
+        }
+
+        string OpenFileName = string.Empty;
 
         WoolichMT09Log logs = new WoolichMT09Log();
 
@@ -35,11 +45,11 @@ namespace WoolichDecoder
 
         string[] autoTuneFilterOptions =
         {
-            "MT09 ETV correction",
-            "Remove Gear 2 logs",
-            "Exclude below 1200 rpm",
-            "Remove Gear 1, 2 & 3 engine braking",
-            "Remove non launch gear 1"
+            "ETV correction for MT-09",
+            "Filter Out Gear 2",
+            "Filter Out Idle RPM below 1200",
+            "Filter Out Engine Braking in Gears 1-3",
+            "Filter to 1000-4500 RPM in Gear 1"
         };
 
 
@@ -147,7 +157,15 @@ namespace WoolichDecoder
             presumedStaticColumns.Add(new StaticPacketColumn() { Column = 94, StaticValue = 0, File = string.Empty });
 
         }
-
+        private bool IsFileLoaded()
+        {
+            if (string.IsNullOrEmpty(OpenFileName))
+            {
+                MessageBox.Show("Please open a file first.");
+                return false;
+            }
+            return true;
+        }
         private void dataGridView1_CellContentClick(object sender, DataGridViewCellEventArgs e)
         {
 
@@ -181,7 +199,7 @@ namespace WoolichDecoder
 
         private void btnOpenFile_Click(object sender, EventArgs e)
         {
-
+ 
             openWRLFileDialog.Title = "Select WRL file to inspect";
 
             if (string.IsNullOrWhiteSpace(this.openWRLFileDialog.InitialDirectory))
@@ -191,6 +209,7 @@ namespace WoolichDecoder
             }
 
             this.openWRLFileDialog.Multiselect = false;
+            this.openWRLFileDialog.Filter = "WRL files (*.wrl)|*.wrl|BIN files (*.bin)|*.bin|All files (*.*)|*.*";
 
             if (openWRLFileDialog.ShowDialog() != DialogResult.OK)
             {
@@ -198,7 +217,7 @@ namespace WoolichDecoder
             };
 
             var filename = openWRLFileDialog.FileNames.FirstOrDefault();
-
+            OpenFileName = filename;
             // clear any existing data
             logs.ClearPackets();
             Array.Clear(logs.PrimaryHeaderData, 0, logs.PrimaryHeaderData.Length);
@@ -251,8 +270,8 @@ namespace WoolichDecoder
 
             }
 
-            this.txtLogging.AppendText($"Load complete. {logs.GetPacketCount()} packets found." + Environment.NewLine);
-
+            this.txtLogging.AppendText($"{LogPrefix.Prefix}Data Loaded and {logs.GetPacketCount()} packets found." + Environment.NewLine);
+            
             // byte[] headerBytes = binReader.ReadBytes((int)fileStream.Length);
             // byte[] fileBytes = System.IO.File.ReadAllBytes(fileNameWithPath_); // this also works
 
@@ -279,8 +298,8 @@ namespace WoolichDecoder
             binWriter.Close();
 
             fileStream.Close();
-            this.txtLogging.AppendText($"bin file creation complete." + Environment.NewLine);
-
+            this.txtLogging.AppendText($"{LogPrefix.Prefix}BIN file created and saved." + Environment.NewLine);
+            
         }
 
 
@@ -292,7 +311,8 @@ namespace WoolichDecoder
         /// <param name="e"></param>
         private void btnAnalyse_Click(object sender, EventArgs e)
         {
-
+            if (!IsFileLoaded())
+                return;
 
             if (!string.IsNullOrWhiteSpace(txtBreakOnChange.Text))
             {
@@ -455,6 +475,8 @@ namespace WoolichDecoder
         /// <param name="e"></param>
         private void btnExportTargetColumn_Click(object sender, EventArgs e)
         {
+            if (!IsFileLoaded())
+                return;
 
             WoolichMT09Log exportItem = null;
             // "Export Full File",
@@ -505,6 +527,8 @@ namespace WoolichDecoder
 
         private void btnExportCSV_Click(object sender, EventArgs e)
         {
+            if (!IsFileLoaded())
+                return;
 
             WoolichMT09Log exportItem = null;
 
@@ -554,7 +578,8 @@ namespace WoolichDecoder
                     }
                     outputFile.Close();
                 }
-                log($"CSV written?");
+                log($"{LogPrefix.Prefix}File in CSV format saved");
+
             }
             catch
             {
@@ -765,6 +790,9 @@ namespace WoolichDecoder
 
         private void btnAutoTuneExport_Click(object sender, EventArgs e)
         {
+            if (!IsFileLoaded())
+                return;
+
             WoolichMT09Log exportItem = logs;
             var outputFileNameWithExtension = outputFileNameWithoutExtension + $"_AT.WRL";
             try
@@ -886,11 +914,11 @@ namespace WoolichDecoder
                     binWriter.Write(exportPackets);
                 }
                 binWriter.Close();
-                log($"Autotune log write is complete?");
+                log($"{LogPrefix.Prefix}Autotune WRL File saved");
             }
             catch
             {
-                log($"Autotune log write error");
+                log($"{LogPrefix.Prefix}Autotune WRL File saving error");
 
             }
         }
@@ -950,5 +978,27 @@ namespace WoolichDecoder
         {
 
         }
+
+        private void txtBreakOnChange_TextChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void btnAnalyse_Click_1(object sender, EventArgs e)
+        {
+
+        }
+
+        private void label4_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void lblFileName_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        //toolTip1.SetToolTip(button1, null);
     }
 }
