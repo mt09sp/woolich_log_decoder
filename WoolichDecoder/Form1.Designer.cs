@@ -40,12 +40,12 @@
             this.btnAutoTuneExport = new System.Windows.Forms.Button();
             this.label2 = new System.Windows.Forms.Label();
             this.panel1 = new System.Windows.Forms.Panel();
+            this.label3 = new System.Windows.Forms.Label();
             this.btnExportCRCHack = new System.Windows.Forms.Button();
             this.btnExportTargetColumn = new System.Windows.Forms.Button();
             this.label1 = new System.Windows.Forms.Label();
             this.txtBreakOnChange = new System.Windows.Forms.TextBox();
             this.btnAnalyse = new System.Windows.Forms.Button();
-            this.label3 = new System.Windows.Forms.Label();
             this.aTFCheckedListBox = new System.Windows.Forms.CheckedListBox();
             this.label4 = new System.Windows.Forms.Label();
             this.panel1.SuspendLayout();
@@ -68,7 +68,7 @@
             this.btnOpenFile.Location = new System.Drawing.Point(9, 11);
             this.btnOpenFile.Margin = new System.Windows.Forms.Padding(2);
             this.btnOpenFile.Name = "btnOpenFile";
-            this.btnOpenFile.Size = new System.Drawing.Size(203, 28);
+            this.btnOpenFile.Size = new System.Drawing.Size(96, 28);
             this.btnOpenFile.TabIndex = 2;
             this.btnOpenFile.Text = "Open File";
             this.btnOpenFile.UseVisualStyleBackColor = true;
@@ -82,7 +82,7 @@
             // lblFileName
             // 
             this.lblFileName.AutoSize = true;
-            this.lblFileName.Location = new System.Drawing.Point(229, 25);
+            this.lblFileName.Location = new System.Drawing.Point(109, 11);
             this.lblFileName.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.lblFileName.Name = "lblFileName";
             this.lblFileName.Size = new System.Drawing.Size(85, 13);
@@ -104,7 +104,7 @@
             // lblExportPacketsCount
             // 
             this.lblExportPacketsCount.AutoSize = true;
-            this.lblExportPacketsCount.Location = new System.Drawing.Point(14, 59);
+            this.lblExportPacketsCount.Location = new System.Drawing.Point(14, 76);
             this.lblExportPacketsCount.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.lblExportPacketsCount.Name = "lblExportPacketsCount";
             this.lblExportPacketsCount.Size = new System.Drawing.Size(109, 13);
@@ -114,7 +114,7 @@
             // lblExportFilename
             // 
             this.lblExportFilename.AutoSize = true;
-            this.lblExportFilename.Location = new System.Drawing.Point(438, 25);
+            this.lblExportFilename.Location = new System.Drawing.Point(109, 39);
             this.lblExportFilename.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.lblExportFilename.Name = "lblExportFilename";
             this.lblExportFilename.Size = new System.Drawing.Size(132, 13);
@@ -123,10 +123,10 @@
             // 
             // btnExportCSV
             // 
-            this.btnExportCSV.Location = new System.Drawing.Point(17, 287);
+            this.btnExportCSV.Location = new System.Drawing.Point(325, 372);
             this.btnExportCSV.Margin = new System.Windows.Forms.Padding(2);
             this.btnExportCSV.Name = "btnExportCSV";
-            this.btnExportCSV.Size = new System.Drawing.Size(203, 28);
+            this.btnExportCSV.Size = new System.Drawing.Size(102, 21);
             this.btnExportCSV.TabIndex = 11;
             this.btnExportCSV.Text = "Export CSV";
             this.btnExportCSV.UseVisualStyleBackColor = true;
@@ -138,9 +138,9 @@
             this.cmbExportType.Items.AddRange(new object[] {
             "Export Full File",
             "Export Analysis Only"});
-            this.cmbExportType.Location = new System.Drawing.Point(111, 252);
+            this.cmbExportType.Location = new System.Drawing.Point(111, 372);
             this.cmbExportType.Name = "cmbExportType";
-            this.cmbExportType.Size = new System.Drawing.Size(129, 21);
+            this.cmbExportType.Size = new System.Drawing.Size(209, 21);
             this.cmbExportType.TabIndex = 12;
             this.cmbExportType.SelectedIndexChanged += new System.EventHandler(this.cmbExportType_SelectedIndexChanged);
             // 
@@ -151,16 +151,16 @@
             this.btnAutoTuneExport.Location = new System.Drawing.Point(301, 108);
             this.btnAutoTuneExport.Margin = new System.Windows.Forms.Padding(2);
             this.btnAutoTuneExport.Name = "btnAutoTuneExport";
-            this.btnAutoTuneExport.Size = new System.Drawing.Size(126, 94);
+            this.btnAutoTuneExport.Size = new System.Drawing.Size(126, 109);
             this.btnAutoTuneExport.TabIndex = 13;
-            this.btnAutoTuneExport.Text = "Export Filtered for Autotune";
+            this.btnAutoTuneExport.Text = "Save Filtered to WRL File";
             this.btnAutoTuneExport.UseVisualStyleBackColor = false;
             this.btnAutoTuneExport.Click += new System.EventHandler(this.btnAutoTuneExport_Click);
             // 
             // label2
             // 
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(14, 255);
+            this.label2.Location = new System.Drawing.Point(14, 380);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(91, 13);
             this.label2.TabIndex = 15;
@@ -181,6 +181,16 @@
             this.panel1.Name = "panel1";
             this.panel1.Size = new System.Drawing.Size(415, 167);
             this.panel1.TabIndex = 16;
+            // 
+            // label3
+            // 
+            this.label3.AutoSize = true;
+            this.label3.Location = new System.Drawing.Point(11, 15);
+            this.label3.Name = "label3";
+            this.label3.Size = new System.Drawing.Size(323, 13);
+            this.label3.TabIndex = 20;
+            this.label3.Text = "Log File Analysis Functions (To analyse a particular packet column)";
+            this.label3.Click += new System.EventHandler(this.label3_Click);
             // 
             // btnExportCRCHack
             // 
@@ -230,16 +240,6 @@
             this.btnAnalyse.TabIndex = 15;
             this.btnAnalyse.Text = "Analyse";
             this.btnAnalyse.UseVisualStyleBackColor = true;
-            // 
-            // label3
-            // 
-            this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(11, 15);
-            this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(323, 13);
-            this.label3.TabIndex = 20;
-            this.label3.Text = "Log File Analysis Functions (To analyse a particular packet column)";
-            this.label3.Click += new System.EventHandler(this.label3_Click);
             // 
             // aTFCheckedListBox
             // 
