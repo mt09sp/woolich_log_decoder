@@ -59,12 +59,12 @@
             // 
             this.txtLogging.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.txtLogging.Location = new System.Drawing.Point(843, 59);
+            this.txtLogging.Location = new System.Drawing.Point(815, 59);
             this.txtLogging.Margin = new System.Windows.Forms.Padding(2);
             this.txtLogging.Multiline = true;
             this.txtLogging.Name = "txtLogging";
             this.txtLogging.ScrollBars = System.Windows.Forms.ScrollBars.Both;
-            this.txtLogging.Size = new System.Drawing.Size(344, 516);
+            this.txtLogging.Size = new System.Drawing.Size(372, 516);
             this.txtLogging.TabIndex = 1;
             // 
             // btnOpenFile
@@ -87,7 +87,7 @@
             // lblFileName
             // 
             this.lblFileName.AutoSize = true;
-            this.lblFileName.Location = new System.Drawing.Point(183, 19);
+            this.lblFileName.Location = new System.Drawing.Point(79, 43);
             this.lblFileName.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.lblFileName.Name = "lblFileName";
             this.lblFileName.Size = new System.Drawing.Size(85, 13);
@@ -100,7 +100,7 @@
             this.txtFeedback.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.txtFeedback.Location = new System.Drawing.Point(432, 59);
+            this.txtFeedback.Location = new System.Drawing.Point(404, 59);
             this.txtFeedback.Margin = new System.Windows.Forms.Padding(2);
             this.txtFeedback.Multiline = true;
             this.txtFeedback.Name = "txtFeedback";
@@ -110,26 +110,29 @@
             // lblExportPacketsCount
             // 
             this.lblExportPacketsCount.AutoSize = true;
-            this.lblExportPacketsCount.Location = new System.Drawing.Point(12, 62);
+            this.lblExportPacketsCount.Location = new System.Drawing.Point(109, 26);
             this.lblExportPacketsCount.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.lblExportPacketsCount.Name = "lblExportPacketsCount";
             this.lblExportPacketsCount.Size = new System.Drawing.Size(109, 13);
             this.lblExportPacketsCount.TabIndex = 9;
             this.lblExportPacketsCount.Text = "No packets to export.";
+            this.lblExportPacketsCount.Visible = false;
             // 
             // lblExportFilename
             // 
             this.lblExportFilename.AutoSize = true;
-            this.lblExportFilename.Location = new System.Drawing.Point(109, 40);
+            this.lblExportFilename.Location = new System.Drawing.Point(109, 11);
             this.lblExportFilename.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.lblExportFilename.Name = "lblExportFilename";
             this.lblExportFilename.Size = new System.Drawing.Size(132, 13);
             this.lblExportFilename.TabIndex = 10;
             this.lblExportFilename.Text = "Export Filename undefined";
+            this.lblExportFilename.Visible = false;
+            this.lblExportFilename.Click += new System.EventHandler(this.lblExportFilename_Click);
             // 
             // btnExportCSV
             // 
-            this.btnExportCSV.Location = new System.Drawing.Point(322, 427);
+            this.btnExportCSV.Location = new System.Drawing.Point(294, 427);
             this.btnExportCSV.Margin = new System.Windows.Forms.Padding(2);
             this.btnExportCSV.Name = "btnExportCSV";
             this.btnExportCSV.Size = new System.Drawing.Size(106, 21);
@@ -147,7 +150,7 @@
             "Export Analysis Only"});
             this.cmbExportType.Location = new System.Drawing.Point(108, 427);
             this.cmbExportType.Name = "cmbExportType";
-            this.cmbExportType.Size = new System.Drawing.Size(209, 21);
+            this.cmbExportType.Size = new System.Drawing.Size(181, 21);
             this.cmbExportType.TabIndex = 12;
             this.cmbExportType.SelectedIndexChanged += new System.EventHandler(this.cmbExportType_SelectedIndexChanged);
             // 
@@ -159,7 +162,7 @@
             this.btnAutoTuneExport.Location = new System.Drawing.Point(301, 108);
             this.btnAutoTuneExport.Margin = new System.Windows.Forms.Padding(2);
             this.btnAutoTuneExport.Name = "btnAutoTuneExport";
-            this.btnAutoTuneExport.Size = new System.Drawing.Size(126, 48);
+            this.btnAutoTuneExport.Size = new System.Drawing.Size(99, 41);
             this.btnAutoTuneExport.TabIndex = 13;
             this.btnAutoTuneExport.Text = "Save";
             this.toolTip1.SetToolTip(this.btnAutoTuneExport, "Save Filtered Data to WRL File");
@@ -188,7 +191,7 @@
             this.panel1.Controls.Add(this.btnAnalyse);
             this.panel1.Location = new System.Drawing.Point(12, 451);
             this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(415, 123);
+            this.panel1.Size = new System.Drawing.Size(387, 123);
             this.panel1.TabIndex = 16;
             // 
             // label3
@@ -258,13 +261,15 @@
             this.aTFCheckedListBox.Name = "aTFCheckedListBox";
             this.aTFCheckedListBox.Size = new System.Drawing.Size(284, 79);
             this.aTFCheckedListBox.TabIndex = 17;
+            this.toolTip1.SetToolTip(this.aTFCheckedListBox, "Tick required settings. More information at: https://github.com/mt09sp/woolich_lo" +
+        "g_decoder");
             this.aTFCheckedListBox.SelectedIndexChanged += new System.EventHandler(this.aTFCheckedListBox_SelectedIndexChanged);
             // 
             // label4
             // 
             this.label4.AutoSize = true;
             this.label4.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
-            this.label4.Location = new System.Drawing.Point(12, 89);
+            this.label4.Location = new System.Drawing.Point(9, 90);
             this.label4.Name = "label4";
             this.label4.Size = new System.Drawing.Size(162, 15);
             this.label4.TabIndex = 18;
@@ -275,25 +280,28 @@
             // 
             this.label5.AutoSize = true;
             this.label5.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
-            this.label5.Location = new System.Drawing.Point(840, 38);
+            this.label5.Location = new System.Drawing.Point(812, 41);
             this.label5.Name = "label5";
             this.label5.Size = new System.Drawing.Size(39, 15);
             this.label5.TabIndex = 19;
             this.label5.Text = "Log: ";
+            this.label5.Click += new System.EventHandler(this.label5_Click);
             // 
             // label6
             // 
             this.label6.AutoSize = true;
             this.label6.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
-            this.label6.Location = new System.Drawing.Point(110, 17);
+            this.label6.Location = new System.Drawing.Point(9, 41);
             this.label6.Name = "label6";
             this.label6.Size = new System.Drawing.Size(68, 15);
             this.label6.TabIndex = 20;
             this.label6.Text = "File Path:";
+            this.label6.Click += new System.EventHandler(this.label6_Click);
             // 
             // toolTip1
             // 
             this.toolTip1.Tag = "";
+            this.toolTip1.Popup += new System.Windows.Forms.PopupEventHandler(this.toolTip1_Popup);
             // 
             // WoolichFileDecoderForm
             // 
