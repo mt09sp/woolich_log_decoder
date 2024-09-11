@@ -65,6 +65,7 @@
             this.panel2 = new System.Windows.Forms.Panel();
             this.panel3 = new System.Windows.Forms.Panel();
             this.label14 = new System.Windows.Forms.Label();
+            this.label15 = new System.Windows.Forms.Label();
             this.panel1.SuspendLayout();
             this.panel2.SuspendLayout();
             this.panel3.SuspendLayout();
@@ -179,7 +180,7 @@
             // 
             this.btnAutoTuneExport.BackColor = System.Drawing.Color.DarkSeaGreen;
             this.btnAutoTuneExport.DialogResult = System.Windows.Forms.DialogResult.OK;
-            this.btnAutoTuneExport.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnAutoTuneExport.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnAutoTuneExport.Location = new System.Drawing.Point(351, 108);
             this.btnAutoTuneExport.Margin = new System.Windows.Forms.Padding(2);
             this.btnAutoTuneExport.Name = "btnAutoTuneExport";
@@ -199,7 +200,6 @@
             this.label2.Size = new System.Drawing.Size(107, 13);
             this.label2.TabIndex = 15;
             this.label2.Text = "CSV Export Type:";
-            this.label2.Click += new System.EventHandler(this.label2_Click);
             // 
             // panel1
             // 
@@ -227,7 +227,6 @@
             this.label3.Size = new System.Drawing.Size(323, 13);
             this.label3.TabIndex = 20;
             this.label3.Text = "Log File Analysis Functions (To analyse a particular packet column)";
-            this.label3.Click += new System.EventHandler(this.label3_Click);
             // 
             // btnExportCRCHack
             // 
@@ -306,7 +305,7 @@
             this.label4.Size = new System.Drawing.Size(162, 15);
             this.label4.TabIndex = 18;
             this.label4.Text = "Autotune export options ";
-            this.label4.Click += new System.EventHandler(this.label4_Click);
+
             // 
             // label5
             // 
@@ -318,7 +317,7 @@
             this.label5.Size = new System.Drawing.Size(39, 15);
             this.label5.TabIndex = 19;
             this.label5.Text = "Log: ";
-            this.label5.Click += new System.EventHandler(this.label5_Click);
+
             // 
             // label6
             // 
@@ -330,7 +329,7 @@
             this.label6.Size = new System.Drawing.Size(68, 15);
             this.label6.TabIndex = 20;
             this.label6.Text = "File Path:";
-            this.label6.Click += new System.EventHandler(this.label6_Click);
+
             // 
             // toolTip1
             // 
@@ -341,13 +340,13 @@
             // 
             this.label7.AutoSize = true;
             this.label7.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
-            this.label7.Location = new System.Drawing.Point(67, 6);
+            this.label7.Location = new System.Drawing.Point(42, 6);
             this.label7.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label7.Name = "label7";
-            this.label7.Size = new System.Drawing.Size(53, 13);
+            this.label7.Size = new System.Drawing.Size(67, 13);
             this.label7.TabIndex = 21;
-            this.label7.Text = "Idle set at";
-            this.label7.Click += new System.EventHandler(this.label7_Click);
+            this.label7.Text = "Filter out Idle";
+
             // 
             // label8
             // 
@@ -359,17 +358,18 @@
             this.label8.Size = new System.Drawing.Size(93, 13);
             this.label8.TabIndex = 22;
             this.label8.Text = "Filter out in Gear 1";
-            this.label8.Click += new System.EventHandler(this.label8_Click);
+
             // 
             // textBox1
             // 
             this.textBox1.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
             this.textBox1.Location = new System.Drawing.Point(139, 3);
             this.textBox1.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            this.textBox1.MaxLength = 2000;
             this.textBox1.Name = "textBox1";
             this.textBox1.Size = new System.Drawing.Size(55, 20);
             this.textBox1.TabIndex = 23;
-            this.textBox1.Text = "1250";
+            this.textBox1.Text = "1200";
             this.textBox1.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
             // 
             // textBox2
@@ -382,7 +382,6 @@
             this.textBox2.TabIndex = 24;
             this.textBox2.Text = "1000";
             this.textBox2.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
-            this.textBox2.TextChanged += new System.EventHandler(this.textBox2_TextChanged);
             // 
             // label9
             // 
@@ -394,7 +393,6 @@
             this.label9.Size = new System.Drawing.Size(31, 13);
             this.label9.TabIndex = 25;
             this.label9.Text = "RPM";
-            this.label9.Click += new System.EventHandler(this.label9_Click);
             // 
             // textBox3
             // 
@@ -406,7 +404,6 @@
             this.textBox3.TabIndex = 26;
             this.textBox3.Text = "4500";
             this.textBox3.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
-            this.textBox3.TextChanged += new System.EventHandler(this.textBox3_TextChanged);
             // 
             // label10
             // 
@@ -418,7 +415,6 @@
             this.label10.Size = new System.Drawing.Size(13, 13);
             this.label10.TabIndex = 27;
             this.label10.Text = "<";
-            this.label10.Click += new System.EventHandler(this.label10_Click);
             // 
             // label11
             // 
@@ -452,7 +448,6 @@
             this.label13.Size = new System.Drawing.Size(31, 13);
             this.label13.TabIndex = 30;
             this.label13.Text = "RPM";
-            this.label13.Click += new System.EventHandler(this.label13_Click);
             // 
             // panel2
             // 
@@ -472,6 +467,7 @@
             // panel3
             // 
             this.panel3.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.panel3.Controls.Add(this.label15);
             this.panel3.Controls.Add(this.textBox1);
             this.panel3.Controls.Add(this.label9);
             this.panel3.Controls.Add(this.label7);
@@ -490,6 +486,17 @@
             this.label14.Size = new System.Drawing.Size(125, 15);
             this.label14.TabIndex = 33;
             this.label14.Text = "Additional settings";
+            // 
+            // label15
+            // 
+            this.label15.AutoSize = true;
+            this.label15.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
+            this.label15.Location = new System.Drawing.Point(117, 6);
+            this.label15.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.label15.Name = "label15";
+            this.label15.Size = new System.Drawing.Size(13, 13);
+            this.label15.TabIndex = 26;
+            this.label15.Text = "<";
             // 
             // WoolichFileDecoderForm
             // 
@@ -570,6 +577,7 @@
         private System.Windows.Forms.Panel panel2;
         private System.Windows.Forms.Panel panel3;
         private System.Windows.Forms.Label label14;
+        private System.Windows.Forms.Label label15;
     }
 }
 

@@ -47,9 +47,9 @@ namespace WoolichDecoder
         {
             "ETV correction for MT-09",
             "Filter Out Gear 2",
-            "Filter Out Idle RPM below 1200",
+            "Filter Out Idle RPM",
             "Filter Out Engine Braking in Gears 1-3",
-            "Filter to 1000-4500 RPM in Gear 1"
+            "Filter Out RPM range in Gear 1"
         };
 
 
@@ -855,8 +855,16 @@ namespace WoolichDecoder
                         // continue;
                     }
 
+
+                    // 4 "Remove non launch gear 1 - customizable"
+
+                    int minRPM = int.Parse(textBox2.Text);  // Read and convert textBox2
+                    int maxRPM = int.Parse(textBox3.Text);  // Read and convert textBox3
+
+                    if (outputGear == 1 && (packet.Value.getRPM() < minRPM || packet.Value.getRPM() > maxRPM) && selectedFilterOptions.Contains(autoTuneFilterOptions[4]))
+
                     // 4 "Remove non launch gear 1"
-                    if (outputGear == 1 && (packet.Value.getRPM() < 1000 || packet.Value.getRPM() > 4500) && selectedFilterOptions.Contains(autoTuneFilterOptions[4]))
+                    //if (outputGear == 1 && (packet.Value.getRPM() < 1000 || packet.Value.getRPM() > 4500) && selectedFilterOptions.Contains(autoTuneFilterOptions[4]))
                     {
                         // We don't want first gear but we do want launch RPM ranges
                         // Exclude anything outside of the launch ranges.
@@ -872,9 +880,16 @@ namespace WoolichDecoder
                     }
 
 
+                    // Get rid of any RPM below defined by textBox1
+
+                    int rpmLimit = int.Parse(textBox1.Text);
+
+                    if (outputGear != 1 && packet.Value.getRPM() <= rpmLimit && selectedFilterOptions.Contains(autoTuneFilterOptions[2]))
+
+
                     // Get rid of anything below 1200 RPM
                     // 2 "Exclude below 1200 rpm"
-                    if (outputGear != 1 && packet.Value.getRPM() <= 1200 && selectedFilterOptions.Contains(autoTuneFilterOptions[2]))
+                    // if (outputGear != 1 && packet.Value.getRPM() <= 1200 && selectedFilterOptions.Contains(autoTuneFilterOptions[2]))
                     {
                         // We aren't interested in below idle changes.
 
@@ -956,22 +971,12 @@ namespace WoolichDecoder
             log($"CRC written?");
         }
 
-        private void label2_Click(object sender, EventArgs e)
-        {
-
-        }
-
         private void WoolichFileDecoderForm_FormClosing(object sender, FormClosingEventArgs e)
         {
             userSettings.LogDirectory = this.logFolder;
 
             // save the user settings.
             userSettings.Save();
-        }
-
-        private void label3_Click(object sender, EventArgs e)
-        {
-
         }
 
         private void aTFCheckedListBox_SelectedIndexChanged(object sender, EventArgs e)
@@ -989,11 +994,6 @@ namespace WoolichDecoder
 
         }
 
-        private void label4_Click(object sender, EventArgs e)
-        {
-
-        }
-
         private void lblFileName_Click(object sender, EventArgs e)
         {
 
@@ -1004,54 +1004,10 @@ namespace WoolichDecoder
 
         }
 
-        private void label6_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void label5_Click(object sender, EventArgs e)
-        {
-
-        }
-
         private void lblExportFilename_Click(object sender, EventArgs e)
         {
 
         }
 
-        private void label7_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void textBox2_TextChanged(object sender, EventArgs e)
-        {
-
-        }
-
-        private void label9_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void label10_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void textBox3_TextChanged(object sender, EventArgs e)
-        {
-
-        }
-
-        private void label13_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void label8_Click(object sender, EventArgs e)
-        {
-
-        }
     }
 }
