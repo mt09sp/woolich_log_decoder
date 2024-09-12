@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace WoolichDecoder.Models
 {
@@ -119,7 +115,7 @@ namespace WoolichDecoder.Models
         public static double getInjectorDuration(this byte[] packet)
         {
             return packet[28] / 2.0;
-        } 
+        }
 
         public static double getIgnitionOffset(this byte[] packet)
         {

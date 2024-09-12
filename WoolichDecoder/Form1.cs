@@ -1,25 +1,27 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Data;
-using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Eventing.Reader;
-using System.Drawing;
 using System.IO;
 using System.Linq;
-using System.Linq.Expressions;
-using System.Net.Sockets;
 using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using WoolichDecoder.Models;
 using WoolichDecoder.Settings;
-using static System.Windows.Forms.LinkLabel;
 
 namespace WoolichDecoder
 {
     public partial class WoolichFileDecoderForm : Form
     {
+        public static class LogPrefix
+        {
+            // Date and Time format
+            private static readonly string DateTimeFormat = "yyyy-MM-dd HH:mm:ss";
+
+            // Generate prefix with date, time and string
+            public static string Prefix => $"{DateTime.Now.ToString(DateTimeFormat)} -- ";
+        }
+
+        string OpenFileName = string.Empty;
 
         WoolichMT09Log logs = new WoolichMT09Log();
 
@@ -35,11 +37,11 @@ namespace WoolichDecoder
 
         string[] autoTuneFilterOptions =
         {
-            "MT09 ETV correction",
-            "Remove Gear 2 logs",
-            "Exclude below 1200 rpm",
-            "Remove Gear 1, 2 & 3 engine braking",
-            "Remove non launch gear 1"
+            "ETV correction for MT-09",
+            "Filter Out Gear 2",
+            "Filter Out Idle RPM",
+            "Filter Out Engine Braking in Gears 1-3",
+            "Filter Out RPM in Gear 1"
         };
 
 
@@ -147,7 +149,15 @@ namespace WoolichDecoder
             presumedStaticColumns.Add(new StaticPacketColumn() { Column = 94, StaticValue = 0, File = string.Empty });
 
         }
-
+        private bool IsFileLoaded()
+        {
+            if (string.IsNullOrEmpty(OpenFileName))
+            {
+                MessageBox.Show("Please open a file first.");
+                return false;
+            }
+            return true;
+        }
         private void dataGridView1_CellContentClick(object sender, DataGridViewCellEventArgs e)
         {
 
@@ -191,6 +201,7 @@ namespace WoolichDecoder
             }
 
             this.openWRLFileDialog.Multiselect = false;
+            this.openWRLFileDialog.Filter = "WRL files (*.wrl)|*.wrl|BIN files (*.bin)|*.bin|All files (*.*)|*.*";
 
             if (openWRLFileDialog.ShowDialog() != DialogResult.OK)
             {
@@ -198,7 +209,7 @@ namespace WoolichDecoder
             };
 
             var filename = openWRLFileDialog.FileNames.FirstOrDefault();
-
+            OpenFileName = filename;
             // clear any existing data
             logs.ClearPackets();
             Array.Clear(logs.PrimaryHeaderData, 0, logs.PrimaryHeaderData.Length);
@@ -251,7 +262,7 @@ namespace WoolichDecoder
 
             }
 
-            this.txtLogging.AppendText($"Load complete. {logs.GetPacketCount()} packets found." + Environment.NewLine);
+            this.txtLogging.AppendText($"{LogPrefix.Prefix}Data Loaded and {logs.GetPacketCount()} packets found." + Environment.NewLine);
 
             // byte[] headerBytes = binReader.ReadBytes((int)fileStream.Length);
             // byte[] fileBytes = System.IO.File.ReadAllBytes(fileNameWithPath_); // this also works
@@ -279,7 +290,7 @@ namespace WoolichDecoder
             binWriter.Close();
 
             fileStream.Close();
-            this.txtLogging.AppendText($"bin file creation complete." + Environment.NewLine);
+            this.txtLogging.AppendText($"{LogPrefix.Prefix}BIN file created and saved." + Environment.NewLine);
 
         }
 
@@ -292,7 +303,8 @@ namespace WoolichDecoder
         /// <param name="e"></param>
         private void btnAnalyse_Click(object sender, EventArgs e)
         {
-
+            if (!IsFileLoaded())
+                return;
 
             if (!string.IsNullOrWhiteSpace(txtBreakOnChange.Text))
             {
@@ -455,6 +467,8 @@ namespace WoolichDecoder
         /// <param name="e"></param>
         private void btnExportTargetColumn_Click(object sender, EventArgs e)
         {
+            if (!IsFileLoaded())
+                return;
 
             WoolichMT09Log exportItem = null;
             // "Export Full File",
@@ -505,6 +519,8 @@ namespace WoolichDecoder
 
         private void btnExportCSV_Click(object sender, EventArgs e)
         {
+            if (!IsFileLoaded())
+                return;
 
             WoolichMT09Log exportItem = null;
 
@@ -554,7 +570,8 @@ namespace WoolichDecoder
                     }
                     outputFile.Close();
                 }
-                log($"CSV written?");
+                log($"{LogPrefix.Prefix}File in CSV format saved");
+
             }
             catch
             {
@@ -765,6 +782,9 @@ namespace WoolichDecoder
 
         private void btnAutoTuneExport_Click(object sender, EventArgs e)
         {
+            if (!IsFileLoaded())
+                return;
+
             WoolichMT09Log exportItem = logs;
             var outputFileNameWithExtension = outputFileNameWithoutExtension + $"_AT.WRL";
             try
@@ -827,8 +847,16 @@ namespace WoolichDecoder
                         // continue;
                     }
 
+
+                    // 4 "Remove non launch gear 1 - customizable"
+
+                    int minRPM = int.Parse(textBox2.Text);  // Read and convert textBox2
+                    int maxRPM = int.Parse(textBox3.Text);  // Read and convert textBox3
+
+                    if (outputGear == 1 && (packet.Value.getRPM() < minRPM || packet.Value.getRPM() > maxRPM) && selectedFilterOptions.Contains(autoTuneFilterOptions[4]))
+
                     // 4 "Remove non launch gear 1"
-                    if (outputGear == 1 && (packet.Value.getRPM() < 1000 || packet.Value.getRPM() > 4500) && selectedFilterOptions.Contains(autoTuneFilterOptions[4]))
+                    //if (outputGear == 1 && (packet.Value.getRPM() < 1000 || packet.Value.getRPM() > 4500) && selectedFilterOptions.Contains(autoTuneFilterOptions[4]))
                     {
                         // We don't want first gear but we do want launch RPM ranges
                         // Exclude anything outside of the launch ranges.
@@ -844,9 +872,16 @@ namespace WoolichDecoder
                     }
 
 
+                    // Get rid of any RPM below defined by textBox1
+
+                    int rpmLimit = int.Parse(textBox1.Text);
+
+                    if (outputGear != 1 && packet.Value.getRPM() <= rpmLimit && selectedFilterOptions.Contains(autoTuneFilterOptions[2]))
+
+
                     // Get rid of anything below 1200 RPM
                     // 2 "Exclude below 1200 rpm"
-                    if (outputGear != 1 && packet.Value.getRPM() <= 1200 && selectedFilterOptions.Contains(autoTuneFilterOptions[2]))
+                    // if (outputGear != 1 && packet.Value.getRPM() <= 1200 && selectedFilterOptions.Contains(autoTuneFilterOptions[2]))
                     {
                         // We aren't interested in below idle changes.
 
@@ -886,11 +921,11 @@ namespace WoolichDecoder
                     binWriter.Write(exportPackets);
                 }
                 binWriter.Close();
-                log($"Autotune log write is complete?");
+                log($"{LogPrefix.Prefix}Autotune WRL File saved");
             }
             catch
             {
-                log($"Autotune log write error");
+                log($"{LogPrefix.Prefix}Autotune WRL File saving error");
 
             }
         }
@@ -928,11 +963,6 @@ namespace WoolichDecoder
             log($"CRC written?");
         }
 
-        private void label2_Click(object sender, EventArgs e)
-        {
-
-        }
-
         private void WoolichFileDecoderForm_FormClosing(object sender, FormClosingEventArgs e)
         {
             userSettings.LogDirectory = this.logFolder;
@@ -941,14 +971,10 @@ namespace WoolichDecoder
             userSettings.Save();
         }
 
-        private void label3_Click(object sender, EventArgs e)
-        {
 
-        }
 
-        private void aTFCheckedListBox_SelectedIndexChanged(object sender, EventArgs e)
-        {
 
-        }
+
+
     }
 }
