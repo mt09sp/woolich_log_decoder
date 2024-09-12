@@ -64,8 +64,8 @@
             this.label13 = new System.Windows.Forms.Label();
             this.panel2 = new System.Windows.Forms.Panel();
             this.panel3 = new System.Windows.Forms.Panel();
-            this.label14 = new System.Windows.Forms.Label();
             this.label15 = new System.Windows.Forms.Label();
+            this.label14 = new System.Windows.Forms.Label();
             this.panel1.SuspendLayout();
             this.panel2.SuspendLayout();
             this.panel3.SuspendLayout();
@@ -111,7 +111,6 @@
             this.lblFileName.Size = new System.Drawing.Size(85, 13);
             this.lblFileName.TabIndex = 3;
             this.lblFileName.Text = "No File Selected";
-            this.lblFileName.Click += new System.EventHandler(this.lblFileName_Click);
             // 
             // txtFeedback
             // 
@@ -148,7 +147,6 @@
             this.lblExportFilename.TabIndex = 10;
             this.lblExportFilename.Text = "Export Filename undefined";
             this.lblExportFilename.Visible = false;
-            this.lblExportFilename.Click += new System.EventHandler(this.lblExportFilename_Click);
             // 
             // btnExportCSV
             // 
@@ -268,7 +266,6 @@
             this.txtBreakOnChange.Name = "txtBreakOnChange";
             this.txtBreakOnChange.Size = new System.Drawing.Size(48, 20);
             this.txtBreakOnChange.TabIndex = 16;
-            this.txtBreakOnChange.TextChanged += new System.EventHandler(this.txtBreakOnChange_TextChanged);
             // 
             // btnAnalyse
             // 
@@ -280,7 +277,6 @@
             this.btnAnalyse.TabIndex = 15;
             this.btnAnalyse.Text = "Analyse";
             this.btnAnalyse.UseVisualStyleBackColor = true;
-            this.btnAnalyse.Click += new System.EventHandler(this.btnAnalyse_Click_1);
             // 
             // aTFCheckedListBox
             // 
@@ -293,7 +289,6 @@
             this.aTFCheckedListBox.TabIndex = 17;
             this.toolTip1.SetToolTip(this.aTFCheckedListBox, "Tick required settings. More information at: https://github.com/mt09sp/woolich_lo" +
         "g_decoder");
-            this.aTFCheckedListBox.SelectedIndexChanged += new System.EventHandler(this.aTFCheckedListBox_SelectedIndexChanged);
             // 
             // label4
             // 
@@ -305,7 +300,6 @@
             this.label4.Size = new System.Drawing.Size(162, 15);
             this.label4.TabIndex = 18;
             this.label4.Text = "Autotune export options ";
-
             // 
             // label5
             // 
@@ -317,7 +311,6 @@
             this.label5.Size = new System.Drawing.Size(39, 15);
             this.label5.TabIndex = 19;
             this.label5.Text = "Log: ";
-
             // 
             // label6
             // 
@@ -329,41 +322,37 @@
             this.label6.Size = new System.Drawing.Size(68, 15);
             this.label6.TabIndex = 20;
             this.label6.Text = "File Path:";
-
             // 
             // toolTip1
             // 
             this.toolTip1.Tag = "";
-            this.toolTip1.Popup += new System.Windows.Forms.PopupEventHandler(this.toolTip1_Popup);
             // 
             // label7
             // 
             this.label7.AutoSize = true;
             this.label7.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
-            this.label7.Location = new System.Drawing.Point(42, 6);
+            this.label7.Location = new System.Drawing.Point(4, 6);
             this.label7.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label7.Name = "label7";
-            this.label7.Size = new System.Drawing.Size(67, 13);
+            this.label7.Size = new System.Drawing.Size(94, 13);
             this.label7.TabIndex = 21;
-            this.label7.Text = "Filter out Idle";
-
+            this.label7.Text = "Filter out Idle RPM";
             // 
             // label8
             // 
             this.label8.AutoSize = true;
             this.label8.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
-            this.label8.Location = new System.Drawing.Point(16, 10);
+            this.label8.Location = new System.Drawing.Point(4, 10);
             this.label8.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label8.Name = "label8";
-            this.label8.Size = new System.Drawing.Size(93, 13);
+            this.label8.Size = new System.Drawing.Size(120, 13);
             this.label8.TabIndex = 22;
-            this.label8.Text = "Filter out in Gear 1";
-
+            this.label8.Text = "Filter out RPM in Gear 1";
             // 
             // textBox1
             // 
             this.textBox1.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
-            this.textBox1.Location = new System.Drawing.Point(139, 3);
+            this.textBox1.Location = new System.Drawing.Point(150, 3);
             this.textBox1.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.textBox1.MaxLength = 2000;
             this.textBox1.Name = "textBox1";
@@ -375,7 +364,7 @@
             // textBox2
             // 
             this.textBox2.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
-            this.textBox2.Location = new System.Drawing.Point(139, 7);
+            this.textBox2.Location = new System.Drawing.Point(150, 7);
             this.textBox2.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.textBox2.Name = "textBox2";
             this.textBox2.Size = new System.Drawing.Size(55, 20);
@@ -387,7 +376,7 @@
             // 
             this.label9.AutoSize = true;
             this.label9.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
-            this.label9.Location = new System.Drawing.Point(202, 6);
+            this.label9.Location = new System.Drawing.Point(213, 6);
             this.label9.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label9.Name = "label9";
             this.label9.Size = new System.Drawing.Size(31, 13);
@@ -397,7 +386,7 @@
             // textBox3
             // 
             this.textBox3.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
-            this.textBox3.Location = new System.Drawing.Point(139, 33);
+            this.textBox3.Location = new System.Drawing.Point(150, 33);
             this.textBox3.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.textBox3.Name = "textBox3";
             this.textBox3.Size = new System.Drawing.Size(55, 20);
@@ -409,7 +398,7 @@
             // 
             this.label10.AutoSize = true;
             this.label10.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
-            this.label10.Location = new System.Drawing.Point(117, 10);
+            this.label10.Location = new System.Drawing.Point(128, 10);
             this.label10.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label10.Name = "label10";
             this.label10.Size = new System.Drawing.Size(13, 13);
@@ -420,7 +409,7 @@
             // 
             this.label11.AutoSize = true;
             this.label11.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
-            this.label11.Location = new System.Drawing.Point(117, 36);
+            this.label11.Location = new System.Drawing.Point(128, 36);
             this.label11.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label11.Name = "label11";
             this.label11.Size = new System.Drawing.Size(13, 13);
@@ -431,7 +420,7 @@
             // 
             this.label12.AutoSize = true;
             this.label12.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
-            this.label12.Location = new System.Drawing.Point(202, 36);
+            this.label12.Location = new System.Drawing.Point(213, 36);
             this.label12.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label12.Name = "label12";
             this.label12.Size = new System.Drawing.Size(31, 13);
@@ -442,7 +431,7 @@
             // 
             this.label13.AutoSize = true;
             this.label13.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
-            this.label13.Location = new System.Drawing.Point(202, 10);
+            this.label13.Location = new System.Drawing.Point(213, 10);
             this.label13.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label13.Name = "label13";
             this.label13.Size = new System.Drawing.Size(31, 13);
@@ -461,7 +450,7 @@
             this.panel2.Controls.Add(this.label10);
             this.panel2.Location = new System.Drawing.Point(10, 255);
             this.panel2.Name = "panel2";
-            this.panel2.Size = new System.Drawing.Size(243, 63);
+            this.panel2.Size = new System.Drawing.Size(249, 63);
             this.panel2.TabIndex = 31;
             // 
             // panel3
@@ -473,8 +462,19 @@
             this.panel3.Controls.Add(this.label7);
             this.panel3.Location = new System.Drawing.Point(10, 221);
             this.panel3.Name = "panel3";
-            this.panel3.Size = new System.Drawing.Size(243, 28);
+            this.panel3.Size = new System.Drawing.Size(249, 28);
             this.panel3.TabIndex = 32;
+            // 
+            // label15
+            // 
+            this.label15.AutoSize = true;
+            this.label15.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
+            this.label15.Location = new System.Drawing.Point(128, 6);
+            this.label15.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.label15.Name = "label15";
+            this.label15.Size = new System.Drawing.Size(13, 13);
+            this.label15.TabIndex = 26;
+            this.label15.Text = "<";
             // 
             // label14
             // 
@@ -486,17 +486,6 @@
             this.label14.Size = new System.Drawing.Size(125, 15);
             this.label14.TabIndex = 33;
             this.label14.Text = "Additional settings";
-            // 
-            // label15
-            // 
-            this.label15.AutoSize = true;
-            this.label15.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
-            this.label15.Location = new System.Drawing.Point(117, 6);
-            this.label15.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
-            this.label15.Name = "label15";
-            this.label15.Size = new System.Drawing.Size(13, 13);
-            this.label15.TabIndex = 26;
-            this.label15.Text = "<";
             // 
             // WoolichFileDecoderForm
             // 

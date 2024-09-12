@@ -1,20 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Data;
-using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Eventing.Reader;
-using System.Drawing;
 using System.IO;
 using System.Linq;
-using System.Linq.Expressions;
-using System.Net.Sockets;
 using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using WoolichDecoder.Models;
 using WoolichDecoder.Settings;
-using static System.Windows.Forms.LinkLabel;
 
 namespace WoolichDecoder
 {
@@ -49,7 +41,7 @@ namespace WoolichDecoder
             "Filter Out Gear 2",
             "Filter Out Idle RPM",
             "Filter Out Engine Braking in Gears 1-3",
-            "Filter Out RPM range in Gear 1"
+            "Filter Out RPM in Gear 1"
         };
 
 
@@ -199,7 +191,7 @@ namespace WoolichDecoder
 
         private void btnOpenFile_Click(object sender, EventArgs e)
         {
- 
+
             openWRLFileDialog.Title = "Select WRL file to inspect";
 
             if (string.IsNullOrWhiteSpace(this.openWRLFileDialog.InitialDirectory))
@@ -271,7 +263,7 @@ namespace WoolichDecoder
             }
 
             this.txtLogging.AppendText($"{LogPrefix.Prefix}Data Loaded and {logs.GetPacketCount()} packets found." + Environment.NewLine);
-            
+
             // byte[] headerBytes = binReader.ReadBytes((int)fileStream.Length);
             // byte[] fileBytes = System.IO.File.ReadAllBytes(fileNameWithPath_); // this also works
 
@@ -299,7 +291,7 @@ namespace WoolichDecoder
 
             fileStream.Close();
             this.txtLogging.AppendText($"{LogPrefix.Prefix}BIN file created and saved." + Environment.NewLine);
-            
+
         }
 
 
@@ -979,35 +971,10 @@ namespace WoolichDecoder
             userSettings.Save();
         }
 
-        private void aTFCheckedListBox_SelectedIndexChanged(object sender, EventArgs e)
-        {
 
-        }
 
-        private void txtBreakOnChange_TextChanged(object sender, EventArgs e)
-        {
 
-        }
 
-        private void btnAnalyse_Click_1(object sender, EventArgs e)
-        {
-
-        }
-
-        private void lblFileName_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void toolTip1_Popup(object sender, PopupEventArgs e)
-        {
-
-        }
-
-        private void lblExportFilename_Click(object sender, EventArgs e)
-        {
-
-        }
 
     }
 }
