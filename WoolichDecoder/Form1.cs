@@ -64,6 +64,7 @@ namespace WoolichDecoder
         {
             InitializeComponent();
             cmbExportType.SelectedIndex = 0;
+            lblExportFilename.Text = "";
 
         }
 
@@ -391,14 +392,11 @@ namespace WoolichDecoder
                         break;
                 }
 
-
                 logs.AddPacket(packetPrefixBytes.Concat(packetBytes).ToArray(), totalPacketLength, pf);
-
             }
 
             // populate the filter options with the options relevant for the packet type
             this.aTFCheckedListBox.Items.AddRange(autoTuneFilterOptions.Where(opt => opt.type == pf).Select(opt => opt.option).ToArray());
-
 
             for (int i = 0; i < this.aTFCheckedListBox.Items.Count; i++)
             {
@@ -406,7 +404,7 @@ namespace WoolichDecoder
             }
 
 
-
+            lblExportPacketsCount.Text = $"{logs.GetPacketCount()}";
             this.txtLogging.AppendText($"Load complete. {logs.GetPacketCount()} packets found." + Environment.NewLine);
 
             // byte[] headerBytes = binReader.ReadBytes((int)fileStream.Length);
@@ -692,6 +690,8 @@ namespace WoolichDecoder
 
             var csvFileName = outputFileNameWithoutExtension + $".csv";
 
+            lblExportFilename.Text = csvFileName;
+
             // "Export Full File",
             // "Export Analysis Only"
             if (cmbExportType.SelectedIndex == 0)
@@ -787,6 +787,9 @@ namespace WoolichDecoder
             }
 
             string outputFileNameWithExtension = outputFileNameWithoutExtension + $"_AT.WRL";
+
+            lblExportFilename.Text = outputFileNameWithExtension;
+
             try
             {
 
@@ -896,7 +899,11 @@ namespace WoolichDecoder
                     binWriter.Write(exportPackets);
                 }
                 binWriter.Close();
-                log($"Autotune log write is complete?");
+                
+
+
+                MessageBox.Show("Autotune Filtered Export Complete", "Export Complete");
+                log($"Autotune Filtered Export Complete");
             }
             catch
             {
@@ -938,11 +945,6 @@ namespace WoolichDecoder
             log($"CRC written?");
         }
 
-        private void label2_Click(object sender, EventArgs e)
-        {
-
-        }
-
         private void WoolichFileDecoderForm_FormClosing(object sender, FormClosingEventArgs e)
         {
             userSettings.LogDirectory = this.logFolder;
@@ -951,15 +953,6 @@ namespace WoolichDecoder
             userSettings.Save();
         }
 
-        private void label3_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void aTFCheckedListBox_SelectedIndexChanged(object sender, EventArgs e)
-        {
-
-        }
 
     }
 }
