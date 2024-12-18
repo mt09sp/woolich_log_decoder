@@ -98,9 +98,10 @@
       <DependentUpon>Form1.cs</DependentUpon>
     </Compile>
     <Compile Include="Models\Enums.cs" />
+    <Compile Include="Models\FilterOptions.cs" />
     <Compile Include="Models\StaticPacketColumn.cs" />
     <Compile Include="Models\WoolichConversions.cs" />
-    <Compile Include="Models\WoolichMT09Log.cs" />
+    <Compile Include="Models\WoolichLog.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Settings\UserSettings.cs" />

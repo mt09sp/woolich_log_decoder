@@ -7,15 +7,16 @@ using System.Text;
 using System.Windows.Forms;
 using WoolichDecoder.Models;
 using WoolichDecoder.Settings;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.Window;
 
 namespace WoolichDecoder
 {
     public partial class WoolichFileDecoderForm : Form
     {
 
-        WoolichMT09Log logs = new WoolichMT09Log();
+        WoolichLog logs = new WoolichLog();
 
-        WoolichMT09Log exportLogs = new WoolichMT09Log();
+        WoolichLog exportLogs = new WoolichLog();
 
         UserSettings userSettings;
 
@@ -25,16 +26,14 @@ namespace WoolichDecoder
         string logFolder = string.Empty;
 
 
-        string[] autoTuneFilterOptions =
+        List<FilterOptions> autoTuneFilterOptions = new List<FilterOptions>()
         {
-            "MT09 ETV correction",
-            "Remove Gear 2 logs",
-            "Exclude below 1200 rpm",
-            "Remove Gear 1, 2 & 3 engine braking",
-            "Remove non launch gear 1"
+            new FilterOptions { id = 1, type = PacketFormat.Yamaha, option = "MT09 ETV correction" },
+            new FilterOptions { id = 2, type = PacketFormat.Yamaha, option = "Remove Gear 2 logs" },
+            new FilterOptions { id = 3, type = PacketFormat.Yamaha, option = "Exclude below 1200 rpm" },
+            new FilterOptions { id = 4, type = PacketFormat.Yamaha, option = "Remove Gear 1, 2 & 3 engine braking" },
+            new FilterOptions { id = 5, type = PacketFormat.Yamaha, option = "Remove non launch gear 1" },
         };
-
-
 
 
         // hours: 5
@@ -153,7 +152,7 @@ namespace WoolichDecoder
         public void SetS1000RR_StaticColumns()
         {
 
-            decodedColumns = new List<int> ();
+            decodedColumns = new List<int>();
 
             presumedStaticColumns.Clear();
 
@@ -283,13 +282,15 @@ namespace WoolichDecoder
                 this.logFolder = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
             }
 
-            this.aTFCheckedListBox.Items.AddRange(autoTuneFilterOptions.ToArray());
+            this.aTFCheckedListBox.Items.Clear();
+
+            // this.aTFCheckedListBox.Items.AddRange(autoTuneFilterOptions.Select(opt => opt.option).ToArray());
 
 
-            for (int i = 0; i < this.aTFCheckedListBox.Items.Count; i++)
-            {
-                aTFCheckedListBox.SetItemCheckState(i, CheckState.Checked);
-            }
+            // for (int i = 0; i < this.aTFCheckedListBox.Items.Count; i++)
+            // {
+            //     aTFCheckedListBox.SetItemCheckState(i, CheckState.Checked);
+            // }
 
         }
 
@@ -349,6 +350,9 @@ namespace WoolichDecoder
             exportLogs.SecondaryHeaderData = logs.SecondaryHeaderData;
 
             bool eof = false;
+            PacketFormat pf = PacketFormat.Unknown;
+
+            // Every row has a row packet prefix despite it being identical for every row.
 
             while (!eof)
             {
@@ -371,9 +375,37 @@ namespace WoolichDecoder
                 }
 
                 int totalPacketLength = (int)packetPrefixBytes[3] + 3;
-                logs.AddPacket(packetPrefixBytes.Concat(packetBytes).ToArray(), totalPacketLength, (int)packetPrefixBytes[4]);
+
+                // TODO: move to own function.
+
+                switch ((int)packetPrefixBytes[4])
+                {
+                    case (int)PacketFormat.Yamaha:
+                        pf = PacketFormat.Yamaha;
+                        break;
+                    case (int)PacketFormat.BMW:
+                        pf = PacketFormat.BMW;
+                        break;
+                    default:
+                        pf = PacketFormat.Unknown;
+                        break;
+                }
+
+
+                logs.AddPacket(packetPrefixBytes.Concat(packetBytes).ToArray(), totalPacketLength, pf);
 
             }
+
+            // populate the filter options with the options relevant for the packet type
+            this.aTFCheckedListBox.Items.AddRange(autoTuneFilterOptions.Where(opt => opt.type == pf).Select(opt => opt.option).ToArray());
+
+
+            for (int i = 0; i < this.aTFCheckedListBox.Items.Count; i++)
+            {
+                aTFCheckedListBox.SetItemCheckState(i, CheckState.Checked);
+            }
+
+
 
             this.txtLogging.AppendText($"Load complete. {logs.GetPacketCount()} packets found." + Environment.NewLine);
 
@@ -417,11 +449,11 @@ namespace WoolichDecoder
         /// <param name="e"></param>
         private void btnAnalyse_Click(object sender, EventArgs e)
         {
-            if (logs.PacketFormat == 0x01)
+            if (logs.packetFormat == PacketFormat.Yamaha)
             {
                 SetMT09_StaticColumns();
             }
-            else if (logs.PacketFormat == 0x10)
+            else if (logs.packetFormat == PacketFormat.BMW)
             {
                 SetS1000RR_StaticColumns();
                 /*
@@ -498,7 +530,7 @@ namespace WoolichDecoder
                     {
                         if (analysisColumn.Contains(packetColumn))
                         {
-                            exportLogs.AddPacket(packet.Value, logs.PacketLength, logs.PacketFormat);
+                            exportLogs.AddPacket(packet.Value, logs.PacketLength, logs.packetFormat);
                         }
                         max = min = packet.Value[packetColumn];
                         first = false;
@@ -511,7 +543,7 @@ namespace WoolichDecoder
                             // Our column changed.
                             if (analysisColumn.Contains(packetColumn))
                             {
-                                exportLogs.AddPacket(packet.Value, logs.PacketLength, logs.PacketFormat);
+                                exportLogs.AddPacket(packet.Value, logs.PacketLength, logs.packetFormat);
                             }
                         }
 
@@ -606,7 +638,7 @@ namespace WoolichDecoder
         private void btnExportTargetColumn_Click(object sender, EventArgs e)
         {
 
-            WoolichMT09Log exportItem = null;
+            WoolichLog exportItem = null;
             // "Export Full File",
             // "Export Analysis Only"
             if (cmbExportType.SelectedIndex == 0)
@@ -656,7 +688,7 @@ namespace WoolichDecoder
         private void btnExportCSV_Click(object sender, EventArgs e)
         {
 
-            WoolichMT09Log exportItem = null;
+            WoolichLog exportItem = null;
 
             var csvFileName = outputFileNameWithoutExtension + $".csv";
 
@@ -679,11 +711,11 @@ namespace WoolichDecoder
             List<int> combinedCols = new List<int>();
 
 
-            if (exportItem.PacketFormat == 0x01)
+            if (exportItem.packetFormat == PacketFormat.Yamaha)
             {
                 SetMT09_StaticColumns();
             }
-            else if (exportItem.PacketFormat == 0x10)
+            else if (exportItem.packetFormat == PacketFormat.BMW)
             {
                 SetS1000RR_StaticColumns();
                 /*
@@ -718,12 +750,12 @@ namespace WoolichDecoder
                     foreach (var packet in exportItem.GetPackets())
                     {
 
-                        var exportLine = WoolichMT09Log.getCSV(packet.Value, packet.Key, exportItem.PacketFormat, this.presumedStaticColumns, combinedCols);
+                        var exportLine = WoolichLog.getCSV(packet.Value, packet.Key, exportItem.packetFormat, this.presumedStaticColumns, combinedCols);
                         outputFile.WriteLine(exportLine);
                         outputFile.Flush();
                         count++;
 
-                        if (count > 100000 && exportItem.PacketFormat != 0x01)
+                        if (count > 100000 && exportItem.packetFormat != PacketFormat.Yamaha)
                         {
                             // if the file format is unknown then limit the output to make excel easier to use.
                             // break;
@@ -732,7 +764,8 @@ namespace WoolichDecoder
                     }
                     outputFile.Close();
                 }
-                log($"CSV written?");
+                MessageBox.Show("CSV Export Complete", "Export Complete");
+                log($"CSV written to disk");
             }
             catch
             {
@@ -741,13 +774,13 @@ namespace WoolichDecoder
 
         }
 
- 
+
 
         private void btnAutoTuneExport_Click(object sender, EventArgs e)
         {
-            WoolichMT09Log exportItem = logs;
+            WoolichLog exportItem = logs;
 
-            if (exportItem.PacketFormat != 0x01)
+            if (exportItem.packetFormat != PacketFormat.Yamaha)
             {
                 MessageBox.Show("This bikes file cannot be adjusted by this software yet.");
                 return;
@@ -789,18 +822,9 @@ namespace WoolichDecoder
                     // I'm choosing gear first. Lets make it 0
                     var outputGear = packet.Value.getGear();
 
-                    // {
-                    // 0 "MT09 ETV correction",
-                    // 1 "Remove Gear 2 logs",
-                    // 2 "Exclude below 1200 rpm",
-                    // 3 "Remove Gear 1, 2 & 3 engine braking",
-                    // 4 "Remove non launch gear 1"
-                    // };
 
-
-
-                    // "Remove Gear 2 logs"
-                    if (outputGear == 2 && selectedFilterOptions.Contains(autoTuneFilterOptions[1]))
+                    // { id = 2, type = PacketFormat.Yamaha, option = "Remove Gear 2 logs" },
+                    if (outputGear == 2 && selectedFilterOptions.Contains(autoTuneFilterOptions.getListValue(2, PacketFormat.Yamaha)))
                     {
                         // 2nd gear is just for slow speed tight corners.
                         // 0 gear is neutral and is supposed to be filterable in autotune.
@@ -814,8 +838,8 @@ namespace WoolichDecoder
                         // continue;
                     }
 
-                    // 4 "Remove non launch gear 1"
-                    if (outputGear == 1 && (packet.Value.getRPM() < 1000 || packet.Value.getRPM() > 4500) && selectedFilterOptions.Contains(autoTuneFilterOptions[4]))
+                    // { id = 5, type = PacketFormat.Yamaha, option = "Remove non launch gear 1" },
+                    if (outputGear == 1 && (packet.Value.getRPM() < 1000 || packet.Value.getRPM() > 4500) && selectedFilterOptions.Contains(autoTuneFilterOptions.getListValue(5, PacketFormat.Yamaha)))
                     {
                         // We don't want first gear but we do want launch RPM ranges
                         // Exclude anything outside of the launch ranges.
@@ -825,15 +849,13 @@ namespace WoolichDecoder
                         outputGear = newOutputGearByte;
                         exportPackets[24] = newOutputGearByte;
 
-
-
                         // continue;
                     }
 
 
                     // Get rid of anything below 1200 RPM
-                    // 2 "Exclude below 1200 rpm"
-                    if (outputGear != 1 && packet.Value.getRPM() <= 1200 && selectedFilterOptions.Contains(autoTuneFilterOptions[2]))
+                    // { id = 3, type = PacketFormat.Yamaha, option = "Exclude below 1200 rpm" },
+                    if (outputGear != 1 && packet.Value.getRPM() <= 1200 && selectedFilterOptions.Contains(autoTuneFilterOptions.getListValue(3, PacketFormat.Yamaha)))
                     {
                         // We aren't interested in below idle changes.
 
@@ -846,8 +868,8 @@ namespace WoolichDecoder
                     }
 
                     // This one is tricky due to wooliches error in decoding the etv packet.
-                    // 3 "Remove Gear 1, 2 & 3 engine braking",
-                    if (packet.Value.getCorrectETV() <= 1.2 && outputGear < 4 && selectedFilterOptions.Contains(autoTuneFilterOptions[3]))
+                    // { id = 4, type = PacketFormat.Yamaha, option = "Remove Gear 1, 2 & 3 engine braking" },
+                    if (packet.Value.getCorrectETV() <= 1.2 && outputGear < 4 && selectedFilterOptions.Contains(autoTuneFilterOptions.getListValue(4, PacketFormat.Yamaha)))
                     {
                         // We aren't interested closed throttle engine braking.
 
@@ -859,8 +881,9 @@ namespace WoolichDecoder
                         // continue;
                     }
 
-
-                    if (selectedFilterOptions.Contains(autoTuneFilterOptions[0]))
+                    // { id = 1, type = PacketFormat.Yamaha, option = "MT09 ETV correction" },
+                    // Caution: This value is TPS calibration dependant.
+                    if (selectedFilterOptions.Contains(autoTuneFilterOptions.getListValue(1, PacketFormat.Yamaha)))
                     {
                         // adjust the etv packet to make woolich put it in the right place.
                         double correctETV = exportPackets.getCorrectETV();
@@ -888,7 +911,7 @@ namespace WoolichDecoder
             try
             {
                 int size = 1000;
-                WoolichMT09Log exportItem = logs;
+                WoolichLog exportItem = logs;
                 var outputFileNameWithExtension = outputFileNameWithoutExtension + $"_CRC.{size}.WRL";
 
                 // Trial output to file...

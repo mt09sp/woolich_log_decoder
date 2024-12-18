@@ -150,5 +150,12 @@ namespace WoolichDecoder.Models
             return ((packet[37] << 8) + packet[38]);
         }
 
+
+        public static string getListValue(this List<FilterOptions> filterOptions, int id, PacketFormat pf)
+        {
+            return filterOptions.Where(opt => opt.id == id && opt.type == pf).Select(opt => opt.option).FirstOrDefault() ?? "";
+        }
+
+
     }
 }

@@ -7,10 +7,8 @@ using System.Threading.Tasks;
 
 namespace WoolichDecoder.Models
 {
-    public class WoolichMT09Log
+    public class WoolichLog
     {
-
-
 
         /// <summary>
         /// PrimaryHeaderLength I expect this identifies the source of the log data. What collected it.
@@ -30,7 +28,7 @@ namespace WoolichDecoder.Models
 
         // Don't know yet... Differentiate between R1/MT09 and S1000RR
         // I'm going to take the value in packet prefix[4] (the 5th item) 0x01 for mt09 and R1 and 0x10 for S1000RR 
-        public int PacketFormat { get; set; } = 0;
+        public PacketFormat packetFormat { get; set; } = PacketFormat.Unknown;
 
 
         public byte[] PrimaryHeaderData = { };
@@ -38,10 +36,10 @@ namespace WoolichDecoder.Models
 
         Dictionary<string, byte[]> logData = new Dictionary<string, byte[]>();
 
-        public int AddPacket(byte[] packet, int totalPacketLength, int packetFormat)
+        public int AddPacket(byte[] packet, int totalPacketLength, PacketFormat packetFormat)
         {
             this.PacketLength = totalPacketLength;
-            this.PacketFormat = packetFormat;
+            this.packetFormat = packetFormat;
 
             string timeString = string.Empty;
             // Timestamp
@@ -99,12 +97,12 @@ namespace WoolichDecoder.Models
 
         public string GetHeader(List<StaticPacketColumn> staticPacketColumns, List<int> combinedCols)
         {
-            if (this.PacketFormat == 0x01)
+            if (this.packetFormat == PacketFormat.Yamaha)
             {
                 // MT09 and R1
                 return "time, RPM, True TPS, 14, TPS (W), ETV (W), etv raw, ETV (Correct), IAP,AFR,Speedo, Engine temp, 16-17, 19, 20, 22, ATM?, 24(pt), gear, clutch?, 25 pt2, throttle off, 25 pt4, Inlet temp, injector dur, ignition, 30,milliseconds,Front Wheel,Rear Wheel,37-38,39,40,Battery,43,44,45,46,47,48";
             }
-            if (this.PacketFormat == 0x10)
+            if (this.packetFormat == PacketFormat.BMW)
             {
 
 
@@ -141,22 +139,22 @@ namespace WoolichDecoder.Models
 
         }
 
-        public static string getCSV(byte[] packet, string timeStamp, int packetFormat, List<StaticPacketColumn> staticPacketColumns, List<int> combinedCols)
+        public static string getCSV(byte[] packet, string timeStamp, PacketFormat packetFormat, List<StaticPacketColumn> staticPacketColumns, List<int> combinedCols)
         {
-            if (packetFormat == 0x01)
+            if (packetFormat == PacketFormat.Yamaha)
             {
                 // MT09 and R1
-                return WoolichMT09Log.getCSV_MT09(packet, timeStamp);
+                return WoolichLog.getCSV_MT09(packet, timeStamp);
             }
-            if (packetFormat == 0x10)
+            if (packetFormat == PacketFormat.BMW)
             {
                 // S1000RR
-                return WoolichMT09Log.getCSV_S1000RR(packet, timeStamp, staticPacketColumns, combinedCols);
+                return WoolichLog.getCSV_S1000RR(packet, timeStamp, staticPacketColumns, combinedCols);
             }
             else
             {
                 // Unknown bike packet type.
-                return WoolichMT09Log.getCSV_Unknown(packet, timeStamp);
+                return WoolichLog.getCSV_Unknown(packet, timeStamp);
 
             }
         }
