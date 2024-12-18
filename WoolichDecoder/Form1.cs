@@ -7,25 +7,16 @@ using System.Text;
 using System.Windows.Forms;
 using WoolichDecoder.Models;
 using WoolichDecoder.Settings;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.Window;
 
 namespace WoolichDecoder
 {
     public partial class WoolichFileDecoderForm : Form
     {
-        public static class LogPrefix
-        {
-            // Date and Time format
-            private static readonly string DateTimeFormat = "yyyy-MM-dd HH:mm:ss";
 
-            // Generate prefix with date, time and string
-            public static string Prefix => $"{DateTime.Now.ToString(DateTimeFormat)} -- ";
-        }
+        WoolichLog logs = new WoolichLog();
 
-        string OpenFileName = string.Empty;
-
-        WoolichMT09Log logs = new WoolichMT09Log();
-
-        WoolichMT09Log exportLogs = new WoolichMT09Log();
+        WoolichLog exportLogs = new WoolichLog();
 
         UserSettings userSettings;
 
@@ -35,16 +26,14 @@ namespace WoolichDecoder
         string logFolder = string.Empty;
 
 
-        string[] autoTuneFilterOptions =
+        List<FilterOptions> autoTuneFilterOptions = new List<FilterOptions>()
         {
-            "ETV correction for MT-09",
-            "Filter Out Gear 2",
-            "Filter Out Idle RPM",
-            "Filter Out Engine Braking in Gears 1-3",
-            "Filter Out RPM in Gear 1"
+            new FilterOptions { id = 1, type = PacketFormat.Yamaha, option = "MT09 ETV correction" },
+            new FilterOptions { id = 2, type = PacketFormat.Yamaha, option = "Remove Gear 2 logs" },
+            new FilterOptions { id = 3, type = PacketFormat.Yamaha, option = "Exclude below 1200 rpm" },
+            new FilterOptions { id = 4, type = PacketFormat.Yamaha, option = "Remove Gear 1, 2 & 3 engine braking" },
+            new FilterOptions { id = 5, type = PacketFormat.Yamaha, option = "Remove non launch gear 1" },
         };
-
-
 
 
         // hours: 5
@@ -60,37 +49,49 @@ namespace WoolichDecoder
         // injector duration: 28 * 0.5 (aka half)
         // ignition btdc?: 29 (-30)
 
-        List<int> decodedColumns = new List<int> {
-            5, 6, 7, 8, 9, // Time
-            10, 11, // RPM
-            12, 13, // true TPS 
-            // 14, unknown
-            // 15, woolich tps
-            // 16, 17 unknown 
-            // 18 etv
-            // 19 ?
-            // 20 ?
-            21, // iap pressure
-            23, // atm pressures
-            41, // battery 
-            31, 32, 33, 34, 35, 36, // speeds
-            // 37, 38, // combined but havent worked out what or how yet. Goes high even when just idling.
-            26, 27, // temperatures
-            28, // injector duration
-            29, // ignition 
-        };
+        List<int> decodedColumns = new List<int>();
 
-        List<int> knownStaticColumns = new List<int> { 0, 1, 2, 3, 4 };
+        // The first columns of each packet. 0, 1, 2 => 00, 01, 02 The 3 is the number of data items (93 or 253 so far) and 4 varies but is unknown
+        List<int> knownPacketDefinitionColumns = new List<int> { 0, 1, 2, 3, 4 };
 
+        // Used by the analysis.
         List<StaticPacketColumn> presumedStaticColumns = new List<StaticPacketColumn> { };
 
         List<int> analysisColumn = new List<int> { };
 
+        // Constructor for form???
         public WoolichFileDecoderForm()
         {
             InitializeComponent();
             cmbExportType.SelectedIndex = 0;
+            lblExportFilename.Text = "";
 
+        }
+
+        public void SetMT09_StaticColumns()
+        {
+            decodedColumns = new List<int> {
+                5, 6, 7, 8, 9, // Time
+                10, 11, // RPM
+                12, 13, // true TPS 
+                // 14, unknown
+                // 15, woolich tps
+                // 16, 17 unknown 
+                // 18 etv
+                // 19 ?
+                // 20 ?
+                21, // iap pressure
+                23, // atm pressures
+                41, // battery 
+                31, 32, 33, 34, 35, 36, // speeds
+                // 37, 38, // combined but havent worked out what or how yet. Goes high even when just idling.
+                26, 27, // temperatures
+                28, // injector duration
+                29, // ignition 
+            };
+
+
+            presumedStaticColumns.Clear();
             presumedStaticColumns.Add(new StaticPacketColumn() { Column = 20, StaticValue = 0, File = string.Empty });
             presumedStaticColumns.Add(new StaticPacketColumn() { Column = 22, StaticValue = 0, File = string.Empty });
             presumedStaticColumns.Add(new StaticPacketColumn() { Column = 39, StaticValue = 0, File = string.Empty });
@@ -147,17 +148,120 @@ namespace WoolichDecoder
             presumedStaticColumns.Add(new StaticPacketColumn() { Column = 92, StaticValue = 0, File = string.Empty });
             presumedStaticColumns.Add(new StaticPacketColumn() { Column = 93, StaticValue = 0, File = string.Empty });
             presumedStaticColumns.Add(new StaticPacketColumn() { Column = 94, StaticValue = 0, File = string.Empty });
+        }
+
+        public void SetS1000RR_StaticColumns()
+        {
+
+            decodedColumns = new List<int>();
+
+            presumedStaticColumns.Clear();
+
+
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 150, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 151, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 152, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 153, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 154, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 155, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 156, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 157, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 158, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 159, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 160, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 161, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 162, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 163, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 164, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 165, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 166, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 167, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 168, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 169, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 170, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 171, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 172, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 173, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 174, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 175, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 176, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 177, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 178, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 179, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 180, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 181, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 182, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 183, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 184, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 185, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 186, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 187, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 188, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 189, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 190, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 191, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 192, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 193, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 194, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 195, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 196, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 197, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 198, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 199, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 200, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 201, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 202, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 203, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 204, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 205, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 206, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 207, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 208, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 209, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 210, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 211, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 212, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 213, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 214, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 215, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 216, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 217, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 218, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 219, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 220, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 221, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 222, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 223, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 224, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 225, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 226, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 227, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 228, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 229, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 230, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 231, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 232, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 233, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 234, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 235, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 236, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 237, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 238, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 239, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 240, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 241, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 242, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 243, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 244, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 245, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 246, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 247, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 248, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 249, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 250, StaticValue = 0, File = string.Empty });
 
         }
-        private bool IsFileLoaded()
-        {
-            if (string.IsNullOrEmpty(OpenFileName))
-            {
-                MessageBox.Show("Please open a file first.");
-                return false;
-            }
-            return true;
-        }
+
         private void dataGridView1_CellContentClick(object sender, DataGridViewCellEventArgs e)
         {
 
@@ -179,13 +283,15 @@ namespace WoolichDecoder
                 this.logFolder = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
             }
 
-            this.aTFCheckedListBox.Items.AddRange(autoTuneFilterOptions.ToArray());
+            this.aTFCheckedListBox.Items.Clear();
+
+            // this.aTFCheckedListBox.Items.AddRange(autoTuneFilterOptions.Select(opt => opt.option).ToArray());
 
 
-            for (int i = 0; i < this.aTFCheckedListBox.Items.Count; i++)
-            {
-                aTFCheckedListBox.SetItemCheckState(i, CheckState.Checked);
-            }
+            // for (int i = 0; i < this.aTFCheckedListBox.Items.Count; i++)
+            // {
+            //     aTFCheckedListBox.SetItemCheckState(i, CheckState.Checked);
+            // }
 
         }
 
@@ -201,22 +307,18 @@ namespace WoolichDecoder
             }
 
             this.openWRLFileDialog.Multiselect = false;
-            this.openWRLFileDialog.Filter = "WRL files (*.wrl)|*.wrl|BIN files (*.bin)|*.bin|All files (*.*)|*.*";
 
             if (openWRLFileDialog.ShowDialog() != DialogResult.OK)
             {
                 return;
             };
 
-            var filename = openWRLFileDialog.FileNames.FirstOrDefault();
-            OpenFileName = filename;
+            string filename = openWRLFileDialog.FileNames.FirstOrDefault();
+
             // clear any existing data
             logs.ClearPackets();
             Array.Clear(logs.PrimaryHeaderData, 0, logs.PrimaryHeaderData.Length);
             Array.Clear(logs.SecondaryHeaderData, 0, logs.SecondaryHeaderData.Length);
-
-
-
 
             string path = string.Empty;
             string binOutputFileName = string.Empty;
@@ -249,20 +351,61 @@ namespace WoolichDecoder
             exportLogs.SecondaryHeaderData = logs.SecondaryHeaderData;
 
             bool eof = false;
+            PacketFormat pf = PacketFormat.Unknown;
+
+            // Every row has a row packet prefix despite it being identical for every row.
 
             while (!eof)
             {
-                byte[] packetBytes = binReader.ReadBytes(logs.PacketLength);
-                if (packetBytes.Length < 96)
+
+                byte[] packetPrefixBytes = binReader.ReadBytes(logs.PacketPrefixLength);
+                if (packetPrefixBytes.Length < 5)
                 {
                     eof = true;
                     continue;
                 }
-                logs.AddPacket(packetBytes);
 
+                // It's wierd that I have to do - 2 but it works... I hope.
+                int calculatedRemainingPacketBytes = (int)packetPrefixBytes[3] - 2;
+
+                byte[] packetBytes = binReader.ReadBytes(calculatedRemainingPacketBytes);
+                if (packetBytes.Length < calculatedRemainingPacketBytes)
+                {
+                    eof = true;
+                    continue;
+                }
+
+                int totalPacketLength = (int)packetPrefixBytes[3] + 3;
+
+                // TODO: move to own function.
+
+                switch ((int)packetPrefixBytes[4])
+                {
+                    case (int)PacketFormat.Yamaha:
+                        pf = PacketFormat.Yamaha;
+                        break;
+                    case (int)PacketFormat.BMW:
+                        pf = PacketFormat.BMW;
+                        break;
+                    default:
+                        pf = PacketFormat.Unknown;
+                        break;
+                }
+
+                logs.AddPacket(packetPrefixBytes.Concat(packetBytes).ToArray(), totalPacketLength, pf);
             }
 
-            this.txtLogging.AppendText($"{LogPrefix.Prefix}Data Loaded and {logs.GetPacketCount()} packets found." + Environment.NewLine);
+            // populate the filter options with the options relevant for the packet type
+            this.aTFCheckedListBox.Items.AddRange(autoTuneFilterOptions.Where(opt => opt.type == pf).Select(opt => opt.option).ToArray());
+
+            for (int i = 0; i < this.aTFCheckedListBox.Items.Count; i++)
+            {
+                aTFCheckedListBox.SetItemCheckState(i, CheckState.Checked);
+            }
+
+
+            lblExportPacketsCount.Text = $"{logs.GetPacketCount()}";
+            this.txtLogging.AppendText($"Load complete. {logs.GetPacketCount()} packets found." + Environment.NewLine);
 
             // byte[] headerBytes = binReader.ReadBytes((int)fileStream.Length);
             // byte[] fileBytes = System.IO.File.ReadAllBytes(fileNameWithPath_); // this also works
@@ -270,13 +413,14 @@ namespace WoolichDecoder
             binReader.Close();
             fileStream.Close();
 
-            // Trial output to file...
+
+            // Trial output to file... This is the output cut down .bin file. 
             fileStream = File.Open(binOutputFileName, FileMode.Create);
             BinaryWriter binWriter = new BinaryWriter(fileStream);
 
             // push to disk
             binWriter.Flush();
-            foreach (var packet in logs.GetPackets())
+            foreach (KeyValuePair<string, byte[]> packet in logs.GetPackets())
             {
                 // byte[] outPacket = new byte[48];
                 // Array.Copy(packet, outPacket, 48);
@@ -290,7 +434,7 @@ namespace WoolichDecoder
             binWriter.Close();
 
             fileStream.Close();
-            this.txtLogging.AppendText($"{LogPrefix.Prefix}BIN file created and saved." + Environment.NewLine);
+            this.txtLogging.AppendText($"bin file creation complete." + Environment.NewLine);
 
         }
 
@@ -303,8 +447,32 @@ namespace WoolichDecoder
         /// <param name="e"></param>
         private void btnAnalyse_Click(object sender, EventArgs e)
         {
-            if (!IsFileLoaded())
-                return;
+            if (logs.packetFormat == PacketFormat.Yamaha)
+            {
+                SetMT09_StaticColumns();
+            }
+            else if (logs.packetFormat == PacketFormat.BMW)
+            {
+                SetS1000RR_StaticColumns();
+                /*
+                combinedCols = new List<int> { 12, 13,
+                    14, 15, 16,
+                    22, 23,
+                    32, 33,
+                    // nice pattern here.
+                    42, 43, 46, 47,
+                    52, 53, 56, 57,
+                    62, 63, 66, 67,
+
+                    75, 76,
+                    83, 84,
+                    85, 86 };
+                */
+            }
+            else
+            {
+                this.presumedStaticColumns.Clear();
+            }
 
             if (!string.IsNullOrWhiteSpace(txtBreakOnChange.Text))
             {
@@ -336,7 +504,7 @@ namespace WoolichDecoder
                     continue;
                 }
 
-                if (knownStaticColumns.Contains(packetColumn))
+                if (knownPacketDefinitionColumns.Contains(packetColumn))
                 {
                     log($"skipping static packet item {packetColumn}");
                     continue;
@@ -360,7 +528,7 @@ namespace WoolichDecoder
                     {
                         if (analysisColumn.Contains(packetColumn))
                         {
-                            exportLogs.AddPacket(packet.Value);
+                            exportLogs.AddPacket(packet.Value, logs.PacketLength, logs.packetFormat);
                         }
                         max = min = packet.Value[packetColumn];
                         first = false;
@@ -373,7 +541,7 @@ namespace WoolichDecoder
                             // Our column changed.
                             if (analysisColumn.Contains(packetColumn))
                             {
-                                exportLogs.AddPacket(packet.Value);
+                                exportLogs.AddPacket(packet.Value, logs.PacketLength, logs.packetFormat);
                             }
                         }
 
@@ -467,10 +635,8 @@ namespace WoolichDecoder
         /// <param name="e"></param>
         private void btnExportTargetColumn_Click(object sender, EventArgs e)
         {
-            if (!IsFileLoaded())
-                return;
 
-            WoolichMT09Log exportItem = null;
+            WoolichLog exportItem = null;
             // "Export Full File",
             // "Export Analysis Only"
             if (cmbExportType.SelectedIndex == 0)
@@ -519,12 +685,12 @@ namespace WoolichDecoder
 
         private void btnExportCSV_Click(object sender, EventArgs e)
         {
-            if (!IsFileLoaded())
-                return;
 
-            WoolichMT09Log exportItem = null;
+            WoolichLog exportItem = null;
 
             var csvFileName = outputFileNameWithoutExtension + $".csv";
+
+            lblExportFilename.Text = csvFileName;
 
             // "Export Full File",
             // "Export Analysis Only"
@@ -539,39 +705,67 @@ namespace WoolichDecoder
                 exportItem = exportLogs;
             }
 
-            /*
+            int packetCount = exportItem.GetPacketCount();
 
-            var csvFile = File.Open(csvFileName, FileMode.Create);
+            int count = 0;
+            List<int> combinedCols = new List<int>();
 
-            string exportLine = string.Empty;
-            foreach (var packet in exportItem.logData)
+
+            if (exportItem.packetFormat == PacketFormat.Yamaha)
             {
-                exportLine = getCSV(packet, true);
-                csvFile.Write
+                SetMT09_StaticColumns();
+            }
+            else if (exportItem.packetFormat == PacketFormat.BMW)
+            {
+                SetS1000RR_StaticColumns();
+                /*
+                combinedCols = new List<int> { 12, 13,
+                    14, 15, 16,
+                    22, 23,
+                    32, 33,
+                    // nice pattern here.
+                    42, 43, 46, 47,
+                    52, 53, 56, 57,
+                    62, 63, 66, 67,
 
+                    75, 76,
+                    83, 84,
+                    85, 86 };
+                */
+            }
+            else
+            {
+                this.presumedStaticColumns.Clear();
             }
 
-            // */
+
             try
             {
+
                 using (StreamWriter outputFile = new StreamWriter(csvFileName))
                 {
-                    string csvHeader = "time, RPM, True TPS, 14, TPS (W), ETV (W), etv raw, ETV (Correct), IAP,AFR,Speedo, Engine temp, 16-17, 19, 20, 22, ATM?, 24(pt), gear, clutch?, 25 pt2, throttle off, 25 pt4, Inlet temp, injector dur, ignition, 30,milliseconds,Front Wheel,Rear Wheel,37-38,39,40,Battery,43,44,45,46,47,48";
+                    string csvHeader = exportItem.GetHeader(this.presumedStaticColumns, combinedCols);
                     outputFile.WriteLine(csvHeader);
-
 
                     foreach (var packet in exportItem.GetPackets())
                     {
 
-                        var exportLine = getCSV(packet.Value, packet.Key, true);
+                        var exportLine = WoolichLog.getCSV(packet.Value, packet.Key, exportItem.packetFormat, this.presumedStaticColumns, combinedCols);
                         outputFile.WriteLine(exportLine);
                         outputFile.Flush();
+                        count++;
+
+                        if (count > 100000 && exportItem.packetFormat != PacketFormat.Yamaha)
+                        {
+                            // if the file format is unknown then limit the output to make excel easier to use.
+                            // break;
+                        }
 
                     }
                     outputFile.Close();
                 }
-                log($"{LogPrefix.Prefix}File in CSV format saved");
-
+                MessageBox.Show("CSV Export Complete", "Export Complete");
+                log($"CSV written to disk");
             }
             catch
             {
@@ -580,213 +774,22 @@ namespace WoolichDecoder
 
         }
 
-        public static string getCSV(byte[] packet, string timeStamp, bool convert)
-        {
-
-
-
-
-            string outputString = string.Empty;
-            // Timestamp
-            // var ms = packet[8] << 8;
-            // ms += packet[9];
-
-            // var hh = packet[5].ToString("00");
-            // var MM = packet[6].ToString("00");
-            // var ss = packet[7].ToString("00");
-            // var ms1 = packet[8];
-            // var ms2 = packet[9];
-            // var ms = ((ms1 << 8) + ms2).ToString("000");
-            // outputString += $"{hh}:{MM}:{ss}.{ms},";
-
-            /*
-            var ms1 = packet[8];
-            var ms2 = packet[9];
-
-            var milliseconds = (((
-                (packet[5] * 60) // hours to minutes 
-                + packet[6]) * 60) // minutes to seconds
-                + packet[7]) * 1000 // seconds to miliseconds
-                + (ms1 << 8) + ms2; // plus our miliseconds.
-            */
-            var milliseconds = packet.getMilliseconds();
-
-            outputString += $"{timeStamp},";
-
-            // 10 RPM
-            outputString += $"{packet.getRPM()},";
-
-            // 12/13 tps related (0xc,0xd)
-            // I think that this is the true TPS.
-            // It reacts sooner than 15 on both rise and fall.
-            // var trueTPS = getTrueTPS((packet[12] << 8) + packet[13]);
-            // outputString += $"{trueTPS},";
-            outputString += $"{packet.getTrueTPS()},";
-
-            // 14 (0xe) possible TPS
-            outputString += $"{packet[14]},";
-
-            // 15 (0xf) confirmed woolich TPS capped at 100. 
-            outputString += $"{packet.getWoolichTPS()},";
-
-
-            // 18 Woolich etv confirmed. shows 2% over on ETV (18.1 instead of 17.7) It's under on the lower side too.
-            outputString += $"{packet.getWoolichBadETV()},";
-
-            outputString += $"{packet[18]},"; // ETV raw
-
-            outputString += $"{packet.getCorrectETV()},";
-
-            // IAP Confirmed.
-            outputString += $"{packet.getIAP()},";
-
-            // AFR 42
-            outputString += $"{packet.getAFR()},";
-
-            // 32 Speedo No conversion ??? but that means 0 to 255 and some bikes go faster.
-            // outputString += $"{packet[32]},";
-            outputString += $"{packet.getSpeedo()},";
-
-            // Engine temp
-            outputString += $"{packet.getEngineTemperature()},";
-
-            // 0 1 when running / 0 when not running
-            // outputString += $"{packet[16]},";
-
-            // 0 to 255 when running / 20 to 145 when not running.
-            // outputString += $"{packet[17]},";
-
-            // This might be ETV also...
-            outputString += $"{packet.get1617()},";
-
-            // 18 im calling etv raw but I don't think it's accurate...
-
-            // 5 to 36 not running. / 0 to 88 when running.
-            outputString += $"{packet[19]},";
-
-            // 0 both running and not running
-            outputString += $"{packet[20]},";
-
-            // 0 both running and not running
-            outputString += $"{packet[22]},";
-
-            // ATM Pressure
-            outputString += $"{packet.getATMPressure()},";
-
-            // Always 128???
-            // 128 to 129 gear 0 to gear 1 last 4 bits are gears. 001 = 1, 010 = 2, 011 = 3, 100 = 4, 101 = 5, 110 = 6
-            var firstPart = packet[24] & 0b11111000;
-            outputString += $"{firstPart},";
-            outputString += $"{packet.getGear()},";
-
-            // Just 65 with throttle open or 97 closed. (engine off)
-            // 65 = 0100 0001
-            // 97 = 0110 0001
-            // Engine on 1, 33, 65, 97, 129, 161, 193, 225
-            // 1 = 0000 0001
-            // 33 = 0010 0001
-            // 65 = 0100 0001
-            // 97 = 0110 0001
-            // 129 = 1000 0001
-            // 161 = 1010 0001
-            // 193 = 1100 0001
-            // 225 = 1110 0001 => Logging Start in neutral???
-            var bit1 = (packet[25] & 0b10000000) >> 7;
-            var bit2 = (packet[25] & 0b01000000) >> 6;
-            var bit3 = (packet[25] & 0b00100000) >> 5;
-            var bit4 = (packet[25] & 0b00010000) >> 4;
-            var bit5 = (packet[25] & 0b00001000) >> 3;
-            var bit6 = (packet[25] & 0b00000100) >> 2;
-            var bit7 = (packet[25] & 0b00000010) >> 1;
-            var bit8 = (packet[25] & 0b00000001);
-            outputString += $"{bit1},"; // clutch maybe??? <= Nope. More complex than that.
-            outputString += $"{bit2},"; // unknown
-            outputString += $"{bit3},"; // throttle closed.
-            outputString += $"{bit4}{bit5}{bit6}{bit7}{bit8},";
-
-            // Inlet temp
-            outputString += $"{packet.getInletTemperature()},";
-
-            // 0 to 13 with motor running (injector duration)
-            outputString += $"{packet.getInjectorDuration()},";
-
-            // 20 to 87 with motor running
-            outputString += $"{packet.getIgnitionOffset()},";
-
-            // 30 Captured but not mapped in either viewer.
-            outputString += $"{packet[30]},";
-
-            // jambing milliseconds in here.
-            outputString += $"{milliseconds},";
-
-            // Front Wheel Speed 33,34
-            outputString += $"{packet.getFrontWheelSpeed()},";
-
-            // 35/36 Rear wheel speed
-            // wheelSpeedSensorTicks
-            outputString += $"{packet.getRearWheelSpeed()},";
-
-
-            // is 37/38 a 2 byte chunk?
-            // 0 to 2 motor running / 0 motor not running.
-            // outputString += $"{packet[37]},";
-            // 0 to 255 motor running | 1, 7, 3, 5, 10 motor not running. Thought was checksum
-            // outputString += $"{packet[38]},";
-            outputString += $"{packet.get3738()},";
-
-            // Nothing
-            outputString += $"{packet[39]},";
-
-            // Nothing
-            outputString += $"{packet[40]},";
-
-            // Battery Voltage 41
-            outputString += $"{packet.getBatteryVoltage()},";
-
-            // 42?
-
-            // Nothing
-            outputString += $"{packet[43]},";
-
-            // Nothing
-            outputString += $"{packet[44]},";
-
-            // Nothing
-            outputString += $"{packet[45]},";
-
-            // Nothing
-            outputString += $"{packet[46]},";
-
-            // Nothing
-            outputString += $"{packet[47]},";
-
-            // Nothing
-            outputString += $"{packet[48]},";
-
-            // outputString += $"{packet[49]},";
-            // outputString += $"{packet[50]},";
-            // outputString += $"{packet[51]},";
-            // outputString += $"{packet[52]},";
-            // outputString += $"{packet[53]},";
-            // outputString += $"{packet[54]},";
-            // outputString += $"{packet[55]},";
-            // outputString += $"{packet[56]},";
-            // outputString += $"{packet[57]},";
-            // outputString += $"{packet[58]},";
-            // outputString += $"{packet[59]},";
-
-            return outputString;
-        }
-
 
 
         private void btnAutoTuneExport_Click(object sender, EventArgs e)
         {
-            if (!IsFileLoaded())
-                return;
+            WoolichLog exportItem = logs;
 
-            WoolichMT09Log exportItem = logs;
-            var outputFileNameWithExtension = outputFileNameWithoutExtension + $"_AT.WRL";
+            if (exportItem.packetFormat != PacketFormat.Yamaha)
+            {
+                MessageBox.Show("This bikes file cannot be adjusted by this software yet.");
+                return;
+            }
+
+            string outputFileNameWithExtension = outputFileNameWithoutExtension + $"_AT.WRL";
+
+            lblExportFilename.Text = outputFileNameWithExtension;
+
             try
             {
 
@@ -822,18 +825,9 @@ namespace WoolichDecoder
                     // I'm choosing gear first. Lets make it 0
                     var outputGear = packet.Value.getGear();
 
-                    // {
-                    // 0 "MT09 ETV correction",
-                    // 1 "Remove Gear 2 logs",
-                    // 2 "Exclude below 1200 rpm",
-                    // 3 "Remove Gear 1, 2 & 3 engine braking",
-                    // 4 "Remove non launch gear 1"
-                    // };
 
-
-
-                    // "Remove Gear 2 logs"
-                    if (outputGear == 2 && selectedFilterOptions.Contains(autoTuneFilterOptions[1]))
+                    // { id = 2, type = PacketFormat.Yamaha, option = "Remove Gear 2 logs" },
+                    if (outputGear == 2 && selectedFilterOptions.Contains(autoTuneFilterOptions.getListValue(2, PacketFormat.Yamaha)))
                     {
                         // 2nd gear is just for slow speed tight corners.
                         // 0 gear is neutral and is supposed to be filterable in autotune.
@@ -847,16 +841,8 @@ namespace WoolichDecoder
                         // continue;
                     }
 
-
-                    // 4 "Remove non launch gear 1 - customizable"
-
-                    int minRPM = int.Parse(textBox2.Text);  // Read and convert textBox2
-                    int maxRPM = int.Parse(textBox3.Text);  // Read and convert textBox3
-
-                    if (outputGear == 1 && (packet.Value.getRPM() < minRPM || packet.Value.getRPM() > maxRPM) && selectedFilterOptions.Contains(autoTuneFilterOptions[4]))
-
-                    // 4 "Remove non launch gear 1"
-                    //if (outputGear == 1 && (packet.Value.getRPM() < 1000 || packet.Value.getRPM() > 4500) && selectedFilterOptions.Contains(autoTuneFilterOptions[4]))
+                    // { id = 5, type = PacketFormat.Yamaha, option = "Remove non launch gear 1" },
+                    if (outputGear == 1 && (packet.Value.getRPM() < 1000 || packet.Value.getRPM() > 4500) && selectedFilterOptions.Contains(autoTuneFilterOptions.getListValue(5, PacketFormat.Yamaha)))
                     {
                         // We don't want first gear but we do want launch RPM ranges
                         // Exclude anything outside of the launch ranges.
@@ -866,22 +852,13 @@ namespace WoolichDecoder
                         outputGear = newOutputGearByte;
                         exportPackets[24] = newOutputGearByte;
 
-
-
                         // continue;
                     }
 
 
-                    // Get rid of any RPM below defined by textBox1
-
-                    int rpmLimit = int.Parse(textBox1.Text);
-
-                    if (outputGear != 1 && packet.Value.getRPM() <= rpmLimit && selectedFilterOptions.Contains(autoTuneFilterOptions[2]))
-
-
                     // Get rid of anything below 1200 RPM
-                    // 2 "Exclude below 1200 rpm"
-                    // if (outputGear != 1 && packet.Value.getRPM() <= 1200 && selectedFilterOptions.Contains(autoTuneFilterOptions[2]))
+                    // { id = 3, type = PacketFormat.Yamaha, option = "Exclude below 1200 rpm" },
+                    if (outputGear != 1 && packet.Value.getRPM() <= 1200 && selectedFilterOptions.Contains(autoTuneFilterOptions.getListValue(3, PacketFormat.Yamaha)))
                     {
                         // We aren't interested in below idle changes.
 
@@ -894,8 +871,8 @@ namespace WoolichDecoder
                     }
 
                     // This one is tricky due to wooliches error in decoding the etv packet.
-                    // 3 "Remove Gear 1, 2 & 3 engine braking",
-                    if (packet.Value.getCorrectETV() <= 1.2 && outputGear < 4 && selectedFilterOptions.Contains(autoTuneFilterOptions[3]))
+                    // { id = 4, type = PacketFormat.Yamaha, option = "Remove Gear 1, 2 & 3 engine braking" },
+                    if (packet.Value.getCorrectETV() <= 1.2 && outputGear < 4 && selectedFilterOptions.Contains(autoTuneFilterOptions.getListValue(4, PacketFormat.Yamaha)))
                     {
                         // We aren't interested closed throttle engine braking.
 
@@ -907,8 +884,9 @@ namespace WoolichDecoder
                         // continue;
                     }
 
-
-                    if (selectedFilterOptions.Contains(autoTuneFilterOptions[0]))
+                    // { id = 1, type = PacketFormat.Yamaha, option = "MT09 ETV correction" },
+                    // Caution: This value is TPS calibration dependant.
+                    if (selectedFilterOptions.Contains(autoTuneFilterOptions.getListValue(1, PacketFormat.Yamaha)))
                     {
                         // adjust the etv packet to make woolich put it in the right place.
                         double correctETV = exportPackets.getCorrectETV();
@@ -921,11 +899,15 @@ namespace WoolichDecoder
                     binWriter.Write(exportPackets);
                 }
                 binWriter.Close();
-                log($"{LogPrefix.Prefix}Autotune WRL File saved");
+                
+
+
+                MessageBox.Show("Autotune Filtered Export Complete", "Export Complete");
+                log($"Autotune Filtered Export Complete");
             }
             catch
             {
-                log($"{LogPrefix.Prefix}Autotune WRL File saving error");
+                log($"Autotune log write error");
 
             }
         }
@@ -936,7 +918,7 @@ namespace WoolichDecoder
             try
             {
                 int size = 1000;
-                WoolichMT09Log exportItem = logs;
+                WoolichLog exportItem = logs;
                 var outputFileNameWithExtension = outputFileNameWithoutExtension + $"_CRC.{size}.WRL";
 
                 // Trial output to file...
@@ -970,10 +952,6 @@ namespace WoolichDecoder
             // save the user settings.
             userSettings.Save();
         }
-
-
-
-
 
 
     }

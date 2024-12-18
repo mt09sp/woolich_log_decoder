@@ -1,4 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace WoolichDecoder.Models
 {
@@ -115,7 +119,7 @@ namespace WoolichDecoder.Models
         public static double getInjectorDuration(this byte[] packet)
         {
             return packet[28] / 2.0;
-        }
+        } 
 
         public static double getIgnitionOffset(this byte[] packet)
         {
@@ -145,6 +149,13 @@ namespace WoolichDecoder.Models
         {
             return ((packet[37] << 8) + packet[38]);
         }
+
+
+        public static string getListValue(this List<FilterOptions> filterOptions, int id, PacketFormat pf)
+        {
+            return filterOptions.Where(opt => opt.id == id && opt.type == pf).Select(opt => opt.option).FirstOrDefault() ?? "";
+        }
+
 
     }
 }

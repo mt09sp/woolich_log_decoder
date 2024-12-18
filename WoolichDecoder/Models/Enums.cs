@@ -12,4 +12,13 @@ namespace WoolichDecoder.Models
         Blue = 8
     }
 
+
+    public enum PacketFormat
+    {
+        Unknown = 0x00,
+        Yamaha = 0x01,
+        BMW = 0x10,
+    }
+
+
 }
