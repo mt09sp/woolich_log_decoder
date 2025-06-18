@@ -41,6 +41,8 @@ namespace WoolichDecoder.Models
             this.PacketLength = totalPacketLength;
             this.packetFormat = packetFormat;
 
+            var checkedDataLength = this.PacketLength - 1;
+
             string timeString = string.Empty;
             // Timestamp
             // var ms = packet[8] << 8;
@@ -58,7 +60,8 @@ namespace WoolichDecoder.Models
 
             byte checksum = 0x00;
 
-            checksum = (byte)(checksumCalculator(packet, 95) & 0xFF);
+            // checkedDataLength = 95 for yamaha 98 bit packet. 78 for kwaka 79 bit packet
+            checksum = (byte)(checksumCalculator(packet, checkedDataLength) & 0xFF);
             return checksum;
 
 
@@ -95,13 +98,20 @@ namespace WoolichDecoder.Models
             Array.Clear(SecondaryHeaderData, 0, SecondaryHeaderData.Length);
         }
 
-        public string GetHeader(List<StaticPacketColumn> staticPacketColumns, List<int> combinedCols)
+        public string GetHeader(List<StaticPacketColumn> staticPacketColumns, List<int> combinedCols, bool includeRaws)
         {
-            if (this.packetFormat == PacketFormat.Yamaha)
+            if (this.packetFormat == PacketFormat.Yamaha && !includeRaws)
             {
                 // MT09 and R1
-                return "time, RPM, True TPS, 14, TPS (W), ETV (W), etv raw, ETV (Correct), IAP,AFR,Speedo, Engine temp, 16-17, 19, 20, 22, ATM?, 24(pt), gear, clutch?, 25 pt2, throttle off, 25 pt4, Inlet temp, injector dur, ignition, 30,milliseconds,Front Wheel,Rear Wheel,37-38,39,40,Battery,43,44,45,46,47,48";
+                return "time, RPM, True TPS, 14, TPS (W), ETV (W), etv raw (18), ETV (Correct), IAP,AFR,Speedo, Engine temp, 16-17, 19, 20, 22, ATM?, 24(pt), gear, clutch?, 25 pt2, throttle off, 25 pt4, Inlet temp, injector dur, ignition, 30,milliseconds,Front Wheel,Rear Wheel,37-38,39,40,Battery,43,44,45,46,47,48";
             }
+            if (this.packetFormat == PacketFormat.Yamaha && includeRaws)
+            {
+                // MT09 and R1
+                return "time, RPM, 12-13, True TPS, 14, 15, TPS (W), ETV (W), etv raw (18), ETV (Correct), IAP,AFR,Speedo, Engine temp, 16-17, 19, 20, 22, ATM?, 24(pt), gear, clutch?, 25 pt2, throttle off, 25 pt4, Inlet temp, injector dur, ignition, 30,milliseconds,Front Wheel,Rear Wheel,37-38,39,40,Battery,43,44,45,46,47,48";
+            }
+
+
             if (this.packetFormat == PacketFormat.BMW)
             {
 
@@ -125,6 +135,14 @@ namespace WoolichDecoder.Models
                 }
                 return header;
             }
+            else if (this.packetFormat == PacketFormat.Kawasaki)
+            {
+
+
+                // ZX10R gen6
+                string header = "time, ms, 10-11 RPM, 12, 13 map raw, MAP, 15 atm raw, atm, IAP, 19 gear, 23, 24, 25-26, 27-28 inlet temp, clutch 33, 36-37 Rear, 38-39 Front, 40 speedo, 42, 64, TPS(W), TPS True, TPS Raw, 67-68 ETV, ETV raw, 69, 70, 73 (AFR), AFR Raw, 78 chk,";
+                return header;
+            }
             else
             {
                 // Unknown bike packet type.
@@ -139,14 +157,19 @@ namespace WoolichDecoder.Models
 
         }
 
-        public static string getCSV(byte[] packet, string timeStamp, PacketFormat packetFormat, List<StaticPacketColumn> staticPacketColumns, List<int> combinedCols)
+        public static string getCSV(byte[] packet, string timeStamp, PacketFormat packetFormat, List<StaticPacketColumn> staticPacketColumns, List<int> combinedCols, bool includeRaws)
         {
             if (packetFormat == PacketFormat.Yamaha)
             {
                 // MT09 and R1
-                return WoolichLog.getCSV_MT09(packet, timeStamp);
+                return WoolichLog.getCSV_MT09(packet, timeStamp, includeRaws);
             }
-            if (packetFormat == PacketFormat.BMW)
+            else if (packetFormat == PacketFormat.Kawasaki)
+            {
+                // zx10R
+                return WoolichLog.getCSV_ZX10R(packet, timeStamp, staticPacketColumns, combinedCols);
+            }
+            else if (packetFormat == PacketFormat.BMW)
             {
                 // S1000RR
                 return WoolichLog.getCSV_S1000RR(packet, timeStamp, staticPacketColumns, combinedCols);
@@ -210,9 +233,6 @@ namespace WoolichDecoder.Models
             outputString += $"{Convert.ToString(wtf,2)} b,";
 
 
-
-
-
             for (int i = 10; i < packet.Length; i++)
             {
 
@@ -268,7 +288,92 @@ namespace WoolichDecoder.Models
             return outputString;
         }
 
-        public static string getCSV_MT09(byte[] packet, string timeStamp)
+        public static string getCSV_ZX10R(byte[] packet, string timeStamp, List<StaticPacketColumn> staticPacketColumns, List<int> combinedCols)
+        {
+            string outputString = string.Empty;
+            // Timestamp
+            // var ms = packet[8] << 8;
+            // ms += packet[9];
+
+            // var hh = packet[5].ToString("00");
+            // var MM = packet[6].ToString("00");
+            // var ss = packet[7].ToString("00");
+            // var ms1 = packet[8];
+            // var ms2 = packet[9];
+            // var ms = ((ms1 << 8) + ms2).ToString("000");
+            // outputString += $"{hh}:{MM}:{ss}.{ms},";
+
+            /*
+            var ms1 = packet[8];
+            var ms2 = packet[9];
+
+            var milliseconds = (((
+                (packet[5] * 60) // hours to minutes 
+                + packet[6]) * 60) // minutes to seconds
+                + packet[7]) * 1000 // seconds to miliseconds
+                + (ms1 << 8) + ms2; // plus our miliseconds.
+            */
+            var milliseconds = packet.getMilliseconds();
+
+            outputString += $"{timeStamp} t,";
+            outputString += $"{milliseconds},";
+
+            outputString += $"{packet.getRPM()},"; // RPM
+            outputString += $"{packet[12]},"; // ???
+            outputString += $"{packet[13]},"; // MAP RAW
+            outputString += $"{packet.getMAP(PacketFormat.Kawasaki)},";
+
+
+            outputString += $"{packet[15]},"; // ATM raw
+            outputString += $"{packet.getATMPressure(PacketFormat.Kawasaki)},"; // ATM
+                                                                            
+            outputString += $"{packet.getIAP(PacketFormat.Kawasaki)},";// IAP MAP - ATM
+
+
+
+            outputString += $"{packet[19]},"; // Gear
+            outputString += $"{packet[23]},"; // ???
+
+            outputString += $"{packet[24]},"; // 
+            outputString += $"{packet.getEngineTemperature(PacketFormat.Kawasaki)},";
+
+            outputString += $"{packet.getInletTemperature(PacketFormat.Kawasaki)},"; // 27 - 28
+
+            
+
+            outputString += $"{packet[33]},"; // clutch
+
+            outputString += $"{((packet[36] << 8) + packet[37])},"; // Rear wheel
+            outputString += $"{((packet[38] << 8) + packet[39])},"; // Front wheel
+
+
+            outputString += $"{packet[40]},"; // 
+            outputString += $"{packet[42]},"; // 
+            outputString += $"{packet[64]},"; // AFR ??
+
+            outputString += $"{packet.getKawaWoolichTPS()},"; // TPS
+            outputString += $"{packet.getKawaTrueTPS()},"; // TPS
+            outputString += $"{((packet[65] << 8) + packet[66])},"; // TPS 6566 Raw
+            
+            outputString += $"{packet.getKawaETV()},"; // ETV
+            outputString += $"{((packet[67] << 8) + packet[68])},"; // ETV RAW
+
+            outputString += $"{packet[69]},"; // 
+            outputString += $"{packet[70]},"; // 
+
+            // string header = "time, ms, 10-11 RPM, 12, 13 map raw, MAP, 15 atm raw, atm, IAP, 19 gear, 23, 24, 25-26, 27-28 inlet temp, clutch 33, 36-37 Rear, 38-39 Front, 40 speedo, 42, 64, TPS(W), TPS True, TPS Raw, 67-68 ETV, ETV raw, 69, 70, 73 (AFR), AFR Raw, 78 chk,";
+
+            // AFR 42
+            outputString += $"{packet.getAFR(PacketFormat.Kawasaki)},";
+            outputString += $"{packet[73]},"; // AFR ??
+            outputString += $"{packet[78]},"; // 
+
+            return outputString;
+        }
+
+
+
+        public static string getCSV_MT09(byte[] packet, string timeStamp, bool includeRaws)
         {
             string outputString = string.Empty;
             // Timestamp
@@ -300,15 +405,30 @@ namespace WoolichDecoder.Models
             // 10 RPM
             outputString += $"{packet.getRPM()},";
 
+
+
             // 12/13 tps related (0xc,0xd)
             // I think that this is the true TPS.
             // It reacts sooner than 15 on both rise and fall.
             // var trueTPS = getTrueTPS((packet[12] << 8) + packet[13]);
+            if (includeRaws)
+            {
+                outputString += $"{(packet[12] << 8) + packet[13]},";
+            }
+
+            // 12/13 tps related (0xc,0xd)
+            // I think that this is the true TPS.
             // outputString += $"{trueTPS},";
             outputString += $"{packet.getTrueTPS()},";
 
             // 14 (0xe) possible TPS
             outputString += $"{packet[14]},";
+
+            if (includeRaws)
+            {
+                // 15 (0xf) confirmed woolich TPS capped at 100. 
+                outputString += $"{packet[15]},";
+            }
 
             // 15 (0xf) confirmed woolich TPS capped at 100. 
             outputString += $"{packet.getWoolichTPS()},";
@@ -321,18 +441,19 @@ namespace WoolichDecoder.Models
 
             outputString += $"{packet.getCorrectETV()},";
 
-            // IAP Confirmed.
-            outputString += $"{packet.getIAP()},";
+            // IAP Confirmed. (packet 21)
+            outputString += $"{packet.getIAP(PacketFormat.Yamaha)},";
 
             // AFR 42
-            outputString += $"{packet.getAFR()},";
+            outputString += $"{packet.getAFR(PacketFormat.Yamaha)},";
+            // outputString += $"{packet[42]},";
 
             // 32 Speedo No conversion ??? but that means 0 to 255 and some bikes go faster.
             // outputString += $"{packet[32]},";
             outputString += $"{packet.getSpeedo()},";
 
             // Engine temp
-            outputString += $"{packet.getEngineTemperature()},";
+            outputString += $"{packet.getEngineTemperature(PacketFormat.Yamaha)},";
 
             // 0 1 when running / 0 when not running
             // outputString += $"{packet[16]},";
@@ -355,13 +476,13 @@ namespace WoolichDecoder.Models
             outputString += $"{packet[22]},";
 
             // ATM Pressure
-            outputString += $"{packet.getATMPressure()},";
+            outputString += $"{packet.getATMPressure(PacketFormat.Yamaha)},";
 
             // Always 128???
             // 128 to 129 gear 0 to gear 1 last 4 bits are gears. 001 = 1, 010 = 2, 011 = 3, 100 = 4, 101 = 5, 110 = 6
             var firstPart = packet[24] & 0b11111000;
             outputString += $"{firstPart},";
-            outputString += $"{packet.getGear()},";
+            outputString += $"{packet.getGear(PacketFormat.Yamaha)},";
 
             // Just 65 with throttle open or 97 closed. (engine off)
             // 65 = 0100 0001
@@ -386,10 +507,10 @@ namespace WoolichDecoder.Models
             outputString += $"{bit1},"; // clutch maybe??? <= Nope. More complex than that.
             outputString += $"{bit2},"; // unknown
             outputString += $"{bit3},"; // throttle closed.
-            outputString += $"{bit4}{bit5}{bit6}{bit7}{bit8},";
+            outputString += $"b{bit4}{bit5}{bit6}{bit7}{bit8},";
 
             // Inlet temp
-            outputString += $"{packet.getInletTemperature()},";
+            outputString += $"{packet.getInletTemperature(PacketFormat.Yamaha)},";
 
             // 0 to 13 with motor running (injector duration)
             outputString += $"{packet.getInjectorDuration()},";

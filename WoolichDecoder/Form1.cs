@@ -25,7 +25,6 @@ namespace WoolichDecoder
 
         string logFolder = string.Empty;
 
-
         List<FilterOptions> autoTuneFilterOptions = new List<FilterOptions>()
         {
             new FilterOptions { id = 1, type = PacketFormat.Yamaha, option = "MT09 ETV correction" },
@@ -148,6 +147,84 @@ namespace WoolichDecoder
             presumedStaticColumns.Add(new StaticPacketColumn() { Column = 92, StaticValue = 0, File = string.Empty });
             presumedStaticColumns.Add(new StaticPacketColumn() { Column = 93, StaticValue = 0, File = string.Empty });
             presumedStaticColumns.Add(new StaticPacketColumn() { Column = 94, StaticValue = 0, File = string.Empty });
+        }
+
+        public void SetZX10R_StaticColumns()
+        {
+            decodedColumns = new List<int> {
+                5, 6, 7, 8, 9, // Time
+                10, 11,
+                12, 
+                13,
+                15, // unknown
+                19, // gear
+                23, // unknown
+                24, // unknown
+                25, 26, // unknown
+                27, 28, // unknown
+                33, // unknown
+                36, 37, // unknown
+                38, 39, // unknown
+                40, // unknown
+                42, // unknown
+                64, // unknown
+                65, 66, // unknown
+                67, 68, // unknown
+                69, // unknown
+                70, // unknown
+                73, // unknown
+                78, // checksum
+            };
+
+
+            presumedStaticColumns.Clear();
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 14, StaticValue = 255, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 16, StaticValue = 255, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 17, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 18, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 20, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 21, StaticValue = 255, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 22, StaticValue = 0, File = string.Empty });
+
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 29, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 30, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 31, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 32, StaticValue = 0, File = string.Empty });
+
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 34, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 35, StaticValue = 0, File = string.Empty });
+
+
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 41, StaticValue = 255, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 43, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 44, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 45, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 46, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 47, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 48, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 49, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 50, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 51, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 52, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 53, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 54, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 55, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 56, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 57, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 58, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 59, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 60, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 61, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 62, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 63, StaticValue = 0, File = string.Empty });
+
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 71, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 72, StaticValue = 0, File = string.Empty });
+
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 74, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 75, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 76, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 77, StaticValue = 0, File = string.Empty });
         }
 
         public void SetS1000RR_StaticColumns()
@@ -381,8 +458,19 @@ namespace WoolichDecoder
 
                 switch ((int)packetPrefixBytes[4])
                 {
-                    case (int)PacketFormat.Yamaha:
-                        pf = PacketFormat.Yamaha;
+                    case (int)PacketFormat.Japanese:
+                        if ((int)packetPrefixBytes[3] == 93)
+                        {
+                            pf = PacketFormat.Yamaha;
+                        }
+                        else if ((int)packetPrefixBytes[3] == 76)
+                        {
+                            pf = PacketFormat.Kawasaki;
+                        }
+                        else
+                        {
+                            pf = PacketFormat.Unknown;
+                        }
                         break;
                     case (int)PacketFormat.BMW:
                         pf = PacketFormat.BMW;
@@ -394,6 +482,8 @@ namespace WoolichDecoder
 
                 logs.AddPacket(packetPrefixBytes.Concat(packetBytes).ToArray(), totalPacketLength, pf);
             }
+
+            aTFCheckedListBox.Items.Clear();
 
             // populate the filter options with the options relevant for the packet type
             this.aTFCheckedListBox.Items.AddRange(autoTuneFilterOptions.Where(opt => opt.type == pf).Select(opt => opt.option).ToArray());
@@ -629,12 +719,15 @@ namespace WoolichDecoder
         }
 
         /// <summary>
-        /// This is for exporting to a WRL file, the results of a column analysis. It requires a column to be analysed even though I check the export type.
+        /// This is for exporting to a WRL file for loading into the data viewer and includes the results of a column analysis.
+        /// It requires a column to be analysed even though I check the export type.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private void btnExportTargetColumn_Click(object sender, EventArgs e)
         {
+
+            // Set export source data
 
             WoolichLog exportItem = null;
             // "Export Full File",
@@ -646,10 +739,14 @@ namespace WoolichDecoder
                 // Error condition.
                 MessageBox.Show("Only export of analysis is supported at the moment.");
             }
-            else
+            else if (cmbExportType.SelectedIndex == 1)
             {
                 // "Export Analysis Only"
                 exportItem = exportLogs;
+            }
+            else
+            {
+                exportItem = logs;
             }
 
             if (!string.IsNullOrWhiteSpace(txtBreakOnChange.Text))
@@ -688,21 +785,30 @@ namespace WoolichDecoder
 
             WoolichLog exportItem = null;
 
-            var csvFileName = outputFileNameWithoutExtension + $".csv";
+            string csvFileName = outputFileNameWithoutExtension + $".csv";
 
             lblExportFilename.Text = csvFileName;
+            bool includeRaws = false;
 
+            // Set export source data
             // "Export Full File",
             // "Export Analysis Only"
             if (cmbExportType.SelectedIndex == 0)
             {
                 // "Export Full File",
                 exportItem = logs;
+                
             }
-            else
+            else if(cmbExportType.SelectedIndex == 1)
             {
                 // "Export Analysis Only"
                 exportItem = exportLogs;
+            }
+            else
+            {
+                exportItem = logs;
+                includeRaws = true;
+                csvFileName = outputFileNameWithoutExtension + $"_r.csv";
             }
 
             int packetCount = exportItem.GetPacketCount();
@@ -713,10 +819,18 @@ namespace WoolichDecoder
 
             if (exportItem.packetFormat == PacketFormat.Yamaha)
             {
+                log($"Exporting for Yamaha");
                 SetMT09_StaticColumns();
+            }
+            else if (exportItem.packetFormat == PacketFormat.Kawasaki)
+            {
+                log($"Exporting for Kawasaki");
+                SetZX10R_StaticColumns();
             }
             else if (exportItem.packetFormat == PacketFormat.BMW)
             {
+                log($"Exporting for BMW");
+
                 SetS1000RR_StaticColumns();
                 /*
                 combinedCols = new List<int> { 12, 13,
@@ -735,6 +849,7 @@ namespace WoolichDecoder
             }
             else
             {
+                log($"Unknown export type");
                 this.presumedStaticColumns.Clear();
             }
 
@@ -744,13 +859,13 @@ namespace WoolichDecoder
 
                 using (StreamWriter outputFile = new StreamWriter(csvFileName))
                 {
-                    string csvHeader = exportItem.GetHeader(this.presumedStaticColumns, combinedCols);
+                    string csvHeader = exportItem.GetHeader(this.presumedStaticColumns, combinedCols, includeRaws);
                     outputFile.WriteLine(csvHeader);
 
                     foreach (var packet in exportItem.GetPackets())
                     {
 
-                        var exportLine = WoolichLog.getCSV(packet.Value, packet.Key, exportItem.packetFormat, this.presumedStaticColumns, combinedCols);
+                        var exportLine = WoolichLog.getCSV(packet.Value, packet.Key, exportItem.packetFormat, this.presumedStaticColumns, combinedCols, includeRaws);
                         outputFile.WriteLine(exportLine);
                         outputFile.Flush();
                         count++;
@@ -823,7 +938,7 @@ namespace WoolichDecoder
                     // clutch
                     // 0 RPM
                     // I'm choosing gear first. Lets make it 0
-                    var outputGear = packet.Value.getGear();
+                    var outputGear = packet.Value.getGear(PacketFormat.Yamaha);
 
 
                     // { id = 2, type = PacketFormat.Yamaha, option = "Remove Gear 2 logs" },
@@ -888,8 +1003,11 @@ namespace WoolichDecoder
                     // Caution: This value is TPS calibration dependant.
                     if (selectedFilterOptions.Contains(autoTuneFilterOptions.getListValue(1, PacketFormat.Yamaha)))
                     {
+
                         // adjust the etv packet to make woolich put it in the right place.
+                        // We know what the correct value should be so get that first.
                         double correctETV = exportPackets.getCorrectETV();
+                        // Then use the wollich formula (reversed) to create the binary value. 
                         byte hackedETVbyte = (byte)((correctETV * 1.66) + 38);
                         diff = diff + hackedETVbyte - exportPackets[18];
                         exportPackets[18] = hackedETVbyte;

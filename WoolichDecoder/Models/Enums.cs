@@ -16,7 +16,9 @@ namespace WoolichDecoder.Models
     public enum PacketFormat
     {
         Unknown = 0x00,
-        Yamaha = 0x01,
+        Japanese = 0x01,
+        Yamaha = 0x5d,
+        Kawasaki = 0x4c,
         BMW = 0x10,
     }
 

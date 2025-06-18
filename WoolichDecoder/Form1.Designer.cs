@@ -137,7 +137,8 @@
             this.cmbExportType.FormattingEnabled = true;
             this.cmbExportType.Items.AddRange(new object[] {
             "Export Full File",
-            "Export Analysis Only"});
+            "Export Analysis Only",
+            "Extended File (Include Raw Cols"});
             this.cmbExportType.Location = new System.Drawing.Point(157, 45);
             this.cmbExportType.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.cmbExportType.Name = "cmbExportType";

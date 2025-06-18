@@ -27,6 +27,7 @@ namespace WoolichDecoder.Models
             return milliseconds;
         }
 
+        // kwaka and yamaha
         public static int getRPM(this byte[] packet)
         {
             return ((packet[10] << 8) + packet[11]);
@@ -54,7 +55,20 @@ namespace WoolichDecoder.Models
             return ETV;
         }
 
+        // Post recall. TPS (ETV) sensor was recalibrated.
         public static double getCorrectETV(this byte[] packet)
+        {
+            // etv raw (18) -> Example Min = 35, max = 213. Calculation = (col[18] - min) / ((max - min) / 100)
+
+            
+            // Because there were some 34's in there??? <-- 34 were no rpm. throttle body???
+            // shifting to 35
+            var ETV = Math.Round(((double)packet[18] - 35) / 1.78, 2);
+            return ETV;
+        }
+
+        // Old pre recall
+        public static double getCorrectETVOld(this byte[] packet)
         {
             // var ETV = Math.Round(((double)col18 - 38) / 1.6575, 2);
             // WTF did I get this from? var ETV = Math.Round(((double)packet[18] - 32) / 1.78, 2); <--- This is the true formula. See log 21
@@ -62,6 +76,28 @@ namespace WoolichDecoder.Models
             // I really think woolich screwed up on this one. Col 19 might actually be more accurate.
 
             var ETV = Math.Round(((double)packet[18] - 32) / 1.78, 2);
+            return ETV;
+        }
+
+        public static double getKawaETV(this byte[] packet)
+        {
+
+            var ETV = Math.Round((((packet[67] << 8) + packet[68]) * 0.12837) - 13.864, 2);
+            return ETV;
+        }
+
+        public static double getKawaWoolichTPS(this byte[] packet)
+        {
+
+            var ETV = Math.Round((((packet[65] << 8) + packet[66]) * 0.144718) - 29.6672, 2);
+            return ETV;
+        }
+
+        public static double getKawaTrueTPS(this byte[] packet)
+        {
+            // y = 0.14442455x - 29.46260918
+
+            var ETV = Math.Round((((packet[65] << 8) + packet[66]) * 0.14442455) - 29.46260918, 2);
             return ETV;
         }
 
@@ -74,14 +110,64 @@ namespace WoolichDecoder.Models
             }
             return TPS;
         }
-        public static double getIAP(this byte[] packet)
+        public static double getIAP(this byte[] packet, PacketFormat packetFormat)
         {
-            return Math.Round(packet[21] / pressureScale, 2);
+
+            if (packetFormat == PacketFormat.Yamaha)
+            {
+
+                return Math.Round(packet[21] / pressureScale, 2);
+            }
+            else if (packetFormat == PacketFormat.Kawasaki)
+            {
+
+                return Math.Round(packet.getATMPressure(packetFormat) - packet.getMAP(packetFormat) , 2);
+            }
+            else
+            {
+                return -99;
+            }
+
         }
 
-        public static double getAFR(this byte[] packet)
+        public static double getMAP(this byte[] packet, PacketFormat packetFormat)
         {
-            return Math.Round(packet[42] / 10.2, 2);
+
+            if (packetFormat == PacketFormat.Yamaha)
+            {
+
+                return -99;
+            }
+            else if (packetFormat == PacketFormat.Kawasaki)
+            {
+
+                return Math.Round((packet[13] * 0.74998425), 2);
+            }
+            else
+            {
+                return -99;
+            }
+
+        }
+
+
+        // it looks like this one was meant to be 10. I back calculated it from woolich initial decoding but now that I look at it it realy should have just been / 10
+        public static double getAFR(this byte[] packet, PacketFormat packetFormat)
+        {
+            if (packetFormat == PacketFormat.Yamaha)
+            {
+
+                return Math.Round(packet[42] / 10.0, 2);
+            }
+            else if (packetFormat == PacketFormat.Kawasaki)
+            {
+
+                return Math.Round(packet[73] / 10.0, 2);
+            }
+            else
+            {
+                return -99;
+            }
         }
 
         public static double getSpeedo(this byte[] packet)
@@ -101,19 +187,59 @@ namespace WoolichDecoder.Models
             return Math.Round(wheelSpeed / wheelSpeedSensorTicks);
         }
 
-        public static double getEngineTemperature(this byte[] packet)
+        public static double getEngineTemperature(this byte[] packet, PacketFormat packetFormat)
         {
-            return packet[26] - temperatureOffset;
+            if (packetFormat == PacketFormat.Yamaha)
+            {
+
+                return packet[26] - temperatureOffset;
+            }
+            else if (packetFormat == PacketFormat.Kawasaki)
+            {
+                return Math.Round(((packet[25] << 8) + packet[26]) * 0.5 - 60, 2);
+            }
+            else
+            {
+                return -99;
+            }
         }
 
-        public static double getATMPressure(this byte[] packet)
+        public static double getATMPressure(this byte[] packet, PacketFormat packetFormat)
         {
-            return Math.Round(packet[23] / pressureScale, 2);
+            if (packetFormat == PacketFormat.Yamaha)
+            {
+
+                return Math.Round(packet[23] / pressureScale, 2);
+            }
+            else if (packetFormat == PacketFormat.Kawasaki)
+            {
+
+                return Math.Round((packet[15] * 0.75) - 0.25, 2);
+            }
+            else
+            {
+                return -99;
+            }
         }
 
-        public static double getInletTemperature(this byte[] packet)
+
+        public static double getInletTemperature(this byte[] packet, PacketFormat packetFormat)
         {
-            return packet[27] - temperatureOffset;
+
+            if (packetFormat == PacketFormat.Yamaha)
+            {
+
+                return packet[27] - temperatureOffset;
+            }
+            else if (packetFormat == PacketFormat.Kawasaki)
+            {
+
+                return Math.Round(((packet[27] << 8) + packet[28]) * 0.5 - 60, 2);
+            }
+            else
+            {
+                return -99;
+            }
         }
 
         public static double getInjectorDuration(this byte[] packet)
@@ -134,10 +260,23 @@ namespace WoolichDecoder.Models
             return Math.Round(packet[41] / batteryVoltageDivider, 2);
         }
 
-        public static int getGear(this byte[] packet)
+        public static int getGear(this byte[] packet, PacketFormat packetFormat)
         {
+            if (packetFormat == PacketFormat.Yamaha)
+            {
 
-            return packet[24] & 0b00000111;
+                return packet[24] & 0b00000111;
+            }
+            else if (packetFormat == PacketFormat.Kawasaki)
+            {
+
+                return packet[19];
+            }
+            else
+            {
+                return -99;
+            }
+
         }
 
         public static double get1617(this byte[] packet)
