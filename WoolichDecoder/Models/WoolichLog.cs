@@ -140,7 +140,7 @@ namespace WoolichDecoder.Models
 
 
                 // ZX10R gen6
-                string header = "time, ms, 10-11 RPM, 12, 13 map raw, MAP, 15 atm raw, atm, IAP, 19 gear, 23, 24, 25-26, 27-28 inlet temp, clutch 33, 36-37 Rear, 38-39 Front, 40 speedo, 42, 64, TPS(W), TPS True, TPS Raw, 67-68 ETV, ETV raw, 69, 70, 73 (AFR), AFR Raw, 78 chk,";
+                string header = "time, ms, 10-11 RPM, 12, 13 map raw, MAP, 15 atm raw, atm, IAP, 19 gear, 23, 24, 25-26 eng temp, 27-28 inlet temp, clutch 33, 36-37 Rear, 38-39 Front, 40 speedo, 42, 64 (AFR1), TPS(W), TPS True, TPS Raw, 67-68 ETV, ETV raw, 69, 70, 73 (AFR), 73(AFR2), 78 chk,";
                 return header;
             }
             else
@@ -319,7 +319,7 @@ namespace WoolichDecoder.Models
             outputString += $"{milliseconds},";
 
             outputString += $"{packet.getRPM()},"; // RPM
-            outputString += $"{packet[12]},"; // ???
+            outputString += $"{packet[12]},"; // ??? TPS?
             outputString += $"{packet[13]},"; // MAP RAW
             outputString += $"{packet.getMAP(PacketFormat.Kawasaki)},";
 

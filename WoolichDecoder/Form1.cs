@@ -154,14 +154,14 @@ namespace WoolichDecoder
             decodedColumns = new List<int> {
                 5, 6, 7, 8, 9, // Time
                 10, 11,
-                12, 
-                13,
-                15, // unknown
+                12, // unknown
+                13, // // MAP RAW
+                15, // // ATM raw
                 19, // gear
                 23, // unknown
                 24, // unknown
-                25, 26, // unknown
-                27, 28, // unknown
+                25, 26, // CoolantTemperature
+                27, 28, // InletAirTemperature
                 33, // unknown
                 36, 37, // unknown
                 38, 39, // unknown
