@@ -19,6 +19,7 @@ namespace WoolichDecoder.Models
         Japanese = 0x01,
         Yamaha = 0x5d,
         Kawasaki = 0x4c,
+        Suzuki = 0x26,
         BMW = 0x10,
     }
 

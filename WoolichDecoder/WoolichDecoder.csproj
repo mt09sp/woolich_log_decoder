@@ -79,6 +79,11 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
+    <Reference Include="System.Collections.Specialized, Version=4.0.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Collections.Specialized.4.3.0\lib\net46\System.Collections.Specialized.dll</HintPath>
+      <Private>True</Private>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -97,9 +102,16 @@
     <Compile Include="Form1.Designer.cs">
       <DependentUpon>Form1.cs</DependentUpon>
     </Compile>
+    <Compile Include="Models\CsvModels.cs" />
+    <Compile Include="Models\CsvModels\BaseCsvModel.cs" />
+    <Compile Include="Models\CsvModels\KawasakiCsvModel.cs" />
+    <Compile Include="Models\CsvModels\SuzukiCsvModel.cs" />
+    <Compile Include="Models\CsvModels\YamahaCsvModel.cs" />
+    <Compile Include="Models\PacketTypeIdentification.cs" />
     <Compile Include="Models\Enums.cs" />
     <Compile Include="Models\FilterOptions.cs" />
     <Compile Include="Models\StaticPacketColumn.cs" />
+    <Compile Include="Models\ViewerModel.cs" />
     <Compile Include="Models\WoolichConversions.cs" />
     <Compile Include="Models\WoolichLog.cs" />
     <Compile Include="Program.cs" />
@@ -123,6 +135,7 @@
     <None Include="..\README.md">
       <Link>README.md</Link>
     </None>
+    <None Include="packages.config" />
     <None Include="Properties\app.manifest" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
@@ -148,6 +161,9 @@
       <ProductName>.NET Framework 3.5 SP1</ProductName>
       <Install>false</Install>
     </BootstrapperPackage>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Converters\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

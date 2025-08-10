@@ -50,6 +50,9 @@
             this.label4 = new System.Windows.Forms.Label();
             this.label5 = new System.Windows.Forms.Label();
             this.panel2 = new System.Windows.Forms.Panel();
+            this.label10 = new System.Windows.Forms.Label();
+            this.label9 = new System.Windows.Forms.Label();
+            this.cmbBikeType = new System.Windows.Forms.ComboBox();
             this.label6 = new System.Windows.Forms.Label();
             this.label7 = new System.Windows.Forms.Label();
             this.label8 = new System.Windows.Forms.Label();
@@ -124,7 +127,7 @@
             // 
             // btnExportCSV
             // 
-            this.btnExportCSV.Location = new System.Drawing.Point(14, 81);
+            this.btnExportCSV.Location = new System.Drawing.Point(14, 122);
             this.btnExportCSV.Name = "btnExportCSV";
             this.btnExportCSV.Size = new System.Drawing.Size(335, 43);
             this.btnExportCSV.TabIndex = 11;
@@ -134,12 +137,13 @@
             // 
             // cmbExportType
             // 
+            this.cmbExportType.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cmbExportType.FormattingEnabled = true;
             this.cmbExportType.Items.AddRange(new object[] {
             "Export Full File",
             "Export Analysis Only",
             "Extended File (Include Raw Cols"});
-            this.cmbExportType.Location = new System.Drawing.Point(157, 45);
+            this.cmbExportType.Location = new System.Drawing.Point(157, 86);
             this.cmbExportType.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.cmbExportType.Name = "cmbExportType";
             this.cmbExportType.Size = new System.Drawing.Size(192, 28);
@@ -161,7 +165,7 @@
             // label2
             // 
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(12, 49);
+            this.label2.Location = new System.Drawing.Point(12, 90);
             this.label2.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(134, 20);
@@ -212,6 +216,7 @@
             this.btnExportTargetColumn.TabIndex = 18;
             this.btnExportTargetColumn.Text = "Export Analysis WRL";
             this.btnExportTargetColumn.UseVisualStyleBackColor = true;
+            this.btnExportTargetColumn.Click += new System.EventHandler(this.btnExportTargetColumn_Click);
             // 
             // label1
             // 
@@ -271,14 +276,45 @@
             // 
             this.panel2.BackColor = System.Drawing.SystemColors.ControlLight;
             this.panel2.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
+            this.panel2.Controls.Add(this.label10);
+            this.panel2.Controls.Add(this.label9);
+            this.panel2.Controls.Add(this.cmbBikeType);
             this.panel2.Controls.Add(this.label6);
             this.panel2.Controls.Add(this.cmbExportType);
             this.panel2.Controls.Add(this.btnExportCSV);
             this.panel2.Controls.Add(this.label2);
-            this.panel2.Location = new System.Drawing.Point(18, 469);
+            this.panel2.Location = new System.Drawing.Point(18, 407);
             this.panel2.Name = "panel2";
-            this.panel2.Size = new System.Drawing.Size(622, 149);
+            this.panel2.Size = new System.Drawing.Size(622, 211);
             this.panel2.TabIndex = 20;
+            // 
+            // label10
+            // 
+            this.label10.Location = new System.Drawing.Point(357, 55);
+            this.label10.Name = "label10";
+            this.label10.Size = new System.Drawing.Size(258, 110);
+            this.label10.TabIndex = 19;
+            this.label10.Text = "Warning: Not every bike has been decoded. This may or may not work.";
+            // 
+            // label9
+            // 
+            this.label9.AutoSize = true;
+            this.label9.Location = new System.Drawing.Point(15, 51);
+            this.label9.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.label9.Name = "label9";
+            this.label9.Size = new System.Drawing.Size(82, 20);
+            this.label9.TabIndex = 18;
+            this.label9.Text = "Bike Type:";
+            // 
+            // cmbBikeType
+            // 
+            this.cmbBikeType.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cmbBikeType.FormattingEnabled = true;
+            this.cmbBikeType.Location = new System.Drawing.Point(157, 48);
+            this.cmbBikeType.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.cmbBikeType.Name = "cmbBikeType";
+            this.cmbBikeType.Size = new System.Drawing.Size(192, 28);
+            this.cmbBikeType.TabIndex = 17;
             // 
             // label6
             // 
@@ -368,6 +404,9 @@
         private System.Windows.Forms.Label label6;
         private System.Windows.Forms.Label label7;
         private System.Windows.Forms.Label label8;
+        private System.Windows.Forms.ComboBox cmbBikeType;
+        private System.Windows.Forms.Label label9;
+        private System.Windows.Forms.Label label10;
     }
 }
 

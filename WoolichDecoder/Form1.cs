@@ -1,12 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Diagnostics;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 using WoolichDecoder.Models;
 using WoolichDecoder.Settings;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.Window;
 
 namespace WoolichDecoder
@@ -16,7 +19,8 @@ namespace WoolichDecoder
 
         WoolichLog logs = new WoolichLog();
 
-        WoolichLog exportLogs = new WoolichLog();
+        /** logs for change point detection of specific bytes */
+        WoolichLog analysisLogs = new WoolichLog();
 
         UserSettings userSettings;
 
@@ -25,15 +29,18 @@ namespace WoolichDecoder
 
         string logFolder = string.Empty;
 
+        bool keepSmallPackets = true;
+
         List<FilterOptions> autoTuneFilterOptions = new List<FilterOptions>()
         {
-            new FilterOptions { id = 1, type = PacketFormat.Yamaha, option = "MT09 ETV correction" },
+            new FilterOptions { id = 1, type = PacketFormat.Yamaha, option = "MT09 Gen3/Gen4 ETV correction" },
             new FilterOptions { id = 2, type = PacketFormat.Yamaha, option = "Remove Gear 2 logs" },
             new FilterOptions { id = 3, type = PacketFormat.Yamaha, option = "Exclude below 1200 rpm" },
             new FilterOptions { id = 4, type = PacketFormat.Yamaha, option = "Remove Gear 1, 2 & 3 engine braking" },
             new FilterOptions { id = 5, type = PacketFormat.Yamaha, option = "Remove non launch gear 1" },
-        };
+            new FilterOptions { id = 6, type = PacketFormat.Suzuki, option = "Hyabusa TPS correction" },
 
+        };
 
         // hours: 5
         // min: 6
@@ -65,6 +72,13 @@ namespace WoolichDecoder
             cmbExportType.SelectedIndex = 0;
             lblExportFilename.Text = "";
 
+            cmbBikeType.Items.Clear();
+            foreach (PacketFormat format in Enum.GetValues(typeof(PacketFormat)))
+            {
+                cmbBikeType.Items.Add(new KeyValuePair<int, string>((int)format, format.ToString()));
+            }
+            cmbBikeType.DisplayMember = "Value";
+            cmbBikeType.ValueMember = "Key";
         }
 
         public void SetMT09_StaticColumns()
@@ -154,7 +168,7 @@ namespace WoolichDecoder
             decodedColumns = new List<int> {
                 5, 6, 7, 8, 9, // Time
                 10, 11,
-                12, // unknown
+                12, // unknown TPS Multiplier
                 13, // // MAP RAW
                 15, // // ATM raw
                 19, // gear
@@ -168,8 +182,8 @@ namespace WoolichDecoder
                 40, // unknown
                 42, // unknown
                 64, // unknown
-                65, 66, // unknown
-                67, 68, // unknown
+                65, 66, // TPS Main
+                67, 68, // ETV
                 69, // unknown
                 70, // unknown
                 73, // unknown
@@ -185,6 +199,7 @@ namespace WoolichDecoder
             presumedStaticColumns.Add(new StaticPacketColumn() { Column = 20, StaticValue = 0, File = string.Empty });
             presumedStaticColumns.Add(new StaticPacketColumn() { Column = 21, StaticValue = 255, File = string.Empty });
             presumedStaticColumns.Add(new StaticPacketColumn() { Column = 22, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 24, StaticValue = 0, File = string.Empty });
 
             presumedStaticColumns.Add(new StaticPacketColumn() { Column = 29, StaticValue = 0, File = string.Empty });
             presumedStaticColumns.Add(new StaticPacketColumn() { Column = 30, StaticValue = 0, File = string.Empty });
@@ -196,6 +211,7 @@ namespace WoolichDecoder
 
 
             presumedStaticColumns.Add(new StaticPacketColumn() { Column = 41, StaticValue = 255, File = string.Empty });
+
             presumedStaticColumns.Add(new StaticPacketColumn() { Column = 43, StaticValue = 0, File = string.Empty });
             presumedStaticColumns.Add(new StaticPacketColumn() { Column = 44, StaticValue = 0, File = string.Empty });
             presumedStaticColumns.Add(new StaticPacketColumn() { Column = 45, StaticValue = 0, File = string.Empty });
@@ -226,6 +242,116 @@ namespace WoolichDecoder
             presumedStaticColumns.Add(new StaticPacketColumn() { Column = 76, StaticValue = 0, File = string.Empty });
             presumedStaticColumns.Add(new StaticPacketColumn() { Column = 77, StaticValue = 0, File = string.Empty });
         }
+
+
+        // Suzuki has long and short packets.
+        public void SetSuzuki_StaticColumns()
+        {
+            decodedColumns = new List<int> {
+                5, 6, 7, 8, 9, // Time
+                10, 11, // RPM calculated
+                12, // TPS
+                // 13, // Unknown
+                14, // MAP
+                15, 16, // ATM Pressure
+                // 17, // Unknown
+                18, // Ignition Advance
+                19, // Gear
+                20, 21, // STP
+                // 22, // Unknown
+                // 23, // Unknown
+                // 24, // Unknown
+                25, 26, // Engine Temp
+                27, 28, // Inlet Temperature
+                // 29, // Unknown
+                // 30, // Unknown
+                // 31, // Unknown
+                32, // Pair valve
+                33, // Clutch. Binary flag
+                // 34, // Unknown
+                // 35, // Unknown
+
+                43, // TPS1
+
+
+
+                64, // AFR
+
+                // 65,
+                66, // TPS2
+                67, // ETV
+
+                77, // HAS A VARIATION
+                78, // checksum
+
+            };
+
+
+            presumedStaticColumns.Clear();
+            
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 13, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 17, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 22, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 23, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 24, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 29, StaticValue = 255, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 30, StaticValue = 255, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 31, StaticValue = 255, File = string.Empty });
+
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 34, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 35, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 36, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 37, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 38, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 39, StaticValue = 0, File = string.Empty });
+
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 40, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 41, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 42, StaticValue = 0, File = string.Empty });
+
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 44, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 45, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 46, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 47, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 48, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 49, StaticValue = 0, File = string.Empty });
+
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 50, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 51, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 52, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 53, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 54, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 55, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 56, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 57, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 58, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 59, StaticValue = 0, File = string.Empty });
+
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 60, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 61, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 62, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 63, StaticValue = 0, File = string.Empty });
+
+
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 65, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 68, StaticValue = 0, File = string.Empty });
+
+
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 69, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 70, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 71, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 72, StaticValue = 0, File = string.Empty });
+
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 73, StaticValue = 255, File = string.Empty });
+
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 74, StaticValue = 128, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 75, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 76, StaticValue = 0, File = string.Empty });
+            presumedStaticColumns.Add(new StaticPacketColumn() { Column = 77, StaticValue = 128, File = string.Empty });
+            // 
+        }
+
+
 
         public void SetS1000RR_StaticColumns()
         {
@@ -362,16 +488,11 @@ namespace WoolichDecoder
 
             this.aTFCheckedListBox.Items.Clear();
 
-            // this.aTFCheckedListBox.Items.AddRange(autoTuneFilterOptions.Select(opt => opt.option).ToArray());
-
-
-            // for (int i = 0; i < this.aTFCheckedListBox.Items.Count; i++)
-            // {
-            //     aTFCheckedListBox.SetItemCheckState(i, CheckState.Checked);
-            // }
-
         }
 
+
+
+        // Open and decode the log file
         private void btnOpenFile_Click(object sender, EventArgs e)
         {
 
@@ -384,19 +505,26 @@ namespace WoolichDecoder
             }
 
             this.openWRLFileDialog.Multiselect = false;
+            openWRLFileDialog.Filter = "Woolich Log File (*.wrl)|*.wrl|All files (*.*)|*.*";
+            openWRLFileDialog.DefaultExt = "wrl";
 
+            // show open file dialog
             if (openWRLFileDialog.ShowDialog() != DialogResult.OK)
             {
                 return;
             };
 
+
+            // Only grab the first file. I don't believe that I allow multi select
             string filename = openWRLFileDialog.FileNames.FirstOrDefault();
 
-            // clear any existing data
+            // clear any existing data and initialise the generic logs object
             logs.ClearPackets();
             Array.Clear(logs.PrimaryHeaderData, 0, logs.PrimaryHeaderData.Length);
             Array.Clear(logs.SecondaryHeaderData, 0, logs.SecondaryHeaderData.Length);
 
+
+            // Set up filenames for later???
             string path = string.Empty;
             string binOutputFileName = string.Empty;
             string inputFileName = string.Empty;
@@ -407,9 +535,8 @@ namespace WoolichDecoder
 
                 outputFileNameWithoutExtension = Path.GetDirectoryName(filename) + "\\" + Path.GetFileNameWithoutExtension(filename);
                 binOutputFileName = Path.GetDirectoryName(filename) + "\\" + Path.GetFileNameWithoutExtension(filename) + ".bin";
-                // outputFileName = Path.GetFileNameWithoutExtension(filename) + ".sql";
-                inputFileName = filename;
 
+                inputFileName = filename;
             }
             else
             {
@@ -418,24 +545,41 @@ namespace WoolichDecoder
             }
             this.lblFileName.Text = inputFileName;
 
+            // Lets get ready to READ!!!!!
             FileStream fileStream = new FileStream(inputFileName, FileMode.Open, FileAccess.Read);
-            BinaryReader binReader = new BinaryReader(fileStream, Encoding.ASCII);
+            BinaryReader wrlLogReader = new BinaryReader(fileStream, Encoding.ASCII);
 
-            logs.PrimaryHeaderData = binReader.ReadBytes(logs.PrimaryHeaderLength);
-            logs.SecondaryHeaderData = binReader.ReadBytes(logs.SecondaryHeaderLength);
+            // start reading the log file. There is at least one identifiable heaser that seems consistent for all bikes.
+            // some bikes have a secondary header though. What's in it is unclear.
+            logs.PrimaryHeaderData = wrlLogReader.ReadBytes(logs.PrimaryHeaderLength);
 
-            exportLogs.PrimaryHeaderData = logs.PrimaryHeaderData;
-            exportLogs.SecondaryHeaderData = logs.SecondaryHeaderData;
+            // this is a hack? A hack that seems to work.
+            // hayabusa has just the primary packet but second byte is 01. Yamaha, kawasaki and S1000RR are 02 for second byte of file and they have the second header.
+            int headerCount = logs.PrimaryHeaderData[1];
+            if (headerCount > 1)
+            {
+                logs.SecondaryHeaderData = wrlLogReader.ReadBytes(logs.SecondaryHeaderLength);
+            }
 
             bool eof = false;
-            PacketFormat pf = PacketFormat.Unknown;
+
+            // The first 10 bytes of the header appear to be unique for each bike. Try and identify what bike we're dealing with.
+            PacketFormat pf = PacketTypeIdentification.IdentifyPacketType(logs.PrimaryHeaderData);
+
+            if (pf != PacketFormat.Unknown)
+            {
+                // we have an exact match. Yamaha, Kawasaki, Suzuki, etc
+                cmbBikeType.SelectedItem = new KeyValuePair<int, string>((int)pf, pf.ToString());
+            }
+
+            // Set the packet format in the logs object
+            logs.packetFormat = pf;
 
             // Every row has a row packet prefix despite it being identical for every row.
-
             while (!eof)
             {
 
-                byte[] packetPrefixBytes = binReader.ReadBytes(logs.PacketPrefixLength);
+                byte[] packetPrefixBytes = wrlLogReader.ReadBytes(logs.PacketPrefixLength);
                 if (packetPrefixBytes.Length < 5)
                 {
                     eof = true;
@@ -445,7 +589,7 @@ namespace WoolichDecoder
                 // It's wierd that I have to do - 2 but it works... I hope.
                 int calculatedRemainingPacketBytes = (int)packetPrefixBytes[3] - 2;
 
-                byte[] packetBytes = binReader.ReadBytes(calculatedRemainingPacketBytes);
+                byte[] packetBytes = wrlLogReader.ReadBytes(calculatedRemainingPacketBytes);
                 if (packetBytes.Length < calculatedRemainingPacketBytes)
                 {
                     eof = true;
@@ -454,33 +598,8 @@ namespace WoolichDecoder
 
                 int totalPacketLength = (int)packetPrefixBytes[3] + 3;
 
-                // TODO: move to own function.
 
-                switch ((int)packetPrefixBytes[4])
-                {
-                    case (int)PacketFormat.Japanese:
-                        if ((int)packetPrefixBytes[3] == 93)
-                        {
-                            pf = PacketFormat.Yamaha;
-                        }
-                        else if ((int)packetPrefixBytes[3] == 76)
-                        {
-                            pf = PacketFormat.Kawasaki;
-                        }
-                        else
-                        {
-                            pf = PacketFormat.Unknown;
-                        }
-                        break;
-                    case (int)PacketFormat.BMW:
-                        pf = PacketFormat.BMW;
-                        break;
-                    default:
-                        pf = PacketFormat.Unknown;
-                        break;
-                }
-
-                logs.AddPacket(packetPrefixBytes.Concat(packetBytes).ToArray(), totalPacketLength, pf);
+                logs.AddPacket(packetPrefixBytes.Concat(packetBytes).ToArray(), totalPacketLength);
             }
 
             aTFCheckedListBox.Items.Clear();
@@ -497,34 +616,9 @@ namespace WoolichDecoder
             lblExportPacketsCount.Text = $"{logs.GetPacketCount()}";
             this.txtLogging.AppendText($"Load complete. {logs.GetPacketCount()} packets found." + Environment.NewLine);
 
-            // byte[] headerBytes = binReader.ReadBytes((int)fileStream.Length);
-            // byte[] fileBytes = System.IO.File.ReadAllBytes(fileNameWithPath_); // this also works
-
-            binReader.Close();
+            // All finished. Time to close the files.
+            wrlLogReader.Close();
             fileStream.Close();
-
-
-            // Trial output to file... This is the output cut down .bin file. 
-            fileStream = File.Open(binOutputFileName, FileMode.Create);
-            BinaryWriter binWriter = new BinaryWriter(fileStream);
-
-            // push to disk
-            binWriter.Flush();
-            foreach (KeyValuePair<string, byte[]> packet in logs.GetPackets())
-            {
-                // byte[] outPacket = new byte[48];
-                // Array.Copy(packet, outPacket, 48);
-
-                binWriter.Write(packet.Value);
-                // binWriter.Write(outPacket);
-            }
-            // binWriter.Write(fileBytes); // just feed it the contents verbatim
-            binWriter.Flush();
-            fileStream.Flush();
-            binWriter.Close();
-
-            fileStream.Close();
-            this.txtLogging.AppendText($"bin file creation complete." + Environment.NewLine);
 
         }
 
@@ -537,11 +631,18 @@ namespace WoolichDecoder
         /// <param name="e"></param>
         private void btnAnalyse_Click(object sender, EventArgs e)
         {
-            if (logs.packetFormat == PacketFormat.Yamaha)
+
+            analysisLogs.packetFormat = logs.packetFormat;
+            analysisLogs.PrimaryHeaderData = logs.PrimaryHeaderData;
+            analysisLogs.SecondaryHeaderData = logs.SecondaryHeaderData;
+            // clear prior analysis
+            analysisLogs.ClearPackets();
+
+            if (analysisLogs.packetFormat == PacketFormat.Yamaha)
             {
                 SetMT09_StaticColumns();
             }
-            else if (logs.packetFormat == PacketFormat.BMW)
+            else if (analysisLogs.packetFormat == PacketFormat.BMW)
             {
                 SetS1000RR_StaticColumns();
                 /*
@@ -558,6 +659,11 @@ namespace WoolichDecoder
                     83, 84,
                     85, 86 };
                 */
+            }
+            else if (analysisLogs.packetFormat == PacketFormat.Suzuki)
+            {
+                SetSuzuki_StaticColumns();
+
             }
             else
             {
@@ -584,7 +690,7 @@ namespace WoolichDecoder
             txtFeedback.Clear();
             lblExportPacketsCount.Text = string.Empty;
 
-            exportLogs.ClearPackets();
+
 
             for (int packetColumn = 0; packetColumn < logs.PacketLength; packetColumn++)
             {
@@ -618,7 +724,7 @@ namespace WoolichDecoder
                     {
                         if (analysisColumn.Contains(packetColumn))
                         {
-                            exportLogs.AddPacket(packet.Value, logs.PacketLength, logs.packetFormat);
+                            analysisLogs.AddPacket(packet.Value, logs.PacketLength);
                         }
                         max = min = packet.Value[packetColumn];
                         first = false;
@@ -631,7 +737,7 @@ namespace WoolichDecoder
                             // Our column changed.
                             if (analysisColumn.Contains(packetColumn))
                             {
-                                exportLogs.AddPacket(packet.Value, logs.PacketLength, logs.packetFormat);
+                                analysisLogs.AddPacket(packet.Value, logs.PacketLength);
                             }
                         }
 
@@ -694,9 +800,9 @@ namespace WoolichDecoder
                 }
             }
 
-            if (exportLogs.GetPacketCount() > 0)
+            if (analysisLogs.GetPacketCount() > 0)
             {
-                lblExportPacketsCount.Text = $"{exportLogs.GetPacketCount()}";
+                lblExportPacketsCount.Text = $"{analysisLogs.GetPacketCount()}";
                 outputFileNameWithExtension = outputFileNameWithoutExtension + $"_C{txtBreakOnChange.Text.Trim()}.WRL";
                 lblExportFilename.Text = outputFileNameWithExtension;
             }
@@ -732,23 +838,25 @@ namespace WoolichDecoder
             WoolichLog exportItem = null;
             // "Export Full File",
             // "Export Analysis Only"
-            if (cmbExportType.SelectedIndex == 0)
+            if (cmbExportType.SelectedIndex == 0 && logs.packetFormat != PacketFormat.Suzuki)
             {
                 // "Export Full File",
                 exportItem = logs;
                 // Error condition.
                 MessageBox.Show("Only export of analysis is supported at the moment.");
+                return;
             }
             else if (cmbExportType.SelectedIndex == 1)
             {
                 // "Export Analysis Only"
-                exportItem = exportLogs;
+                exportItem = analysisLogs;
             }
             else
             {
                 exportItem = logs;
             }
 
+            // if an analysis has been done then txtBreakOnChange will have a value. That's currently our check
             if (!string.IsNullOrWhiteSpace(txtBreakOnChange.Text))
             {
                 try
@@ -772,7 +880,37 @@ namespace WoolichDecoder
                 {
                 }
             }
+            else if (logs.packetFormat == PacketFormat.Suzuki)
+            {
 
+                var outputFileNameWithExtension = outputFileNameWithoutExtension + $"_SUZ_LONG.WRL";
+                // Export long packets only
+                try
+                {
+                    // Trial output to file...
+                    BinaryWriter binWriter = new BinaryWriter(File.Open(outputFileNameWithExtension, FileMode.Create));
+                    // push to disk
+                    // binWriter.Flush();
+                    binWriter.Write(exportItem.PrimaryHeaderData);
+                    binWriter.Write(exportItem.SecondaryHeaderData);
+                    foreach (var packet in exportItem.GetPackets())
+                    {
+                        if (packet.Value[3] == 0x26)
+                        {
+                            continue;
+                        }
+                        binWriter.Write(packet.Value);
+                        binWriter.Flush();
+                    }
+                    binWriter.Close();
+
+                    MessageBox.Show($"Export to {outputFileNameWithExtension} complete ");
+                    log($"Export to {outputFileNameWithExtension} complete ");
+                }
+                catch
+                {
+                }
+            }
         }
 
         private void cmbExportType_SelectedIndexChanged(object sender, EventArgs e)
@@ -782,6 +920,19 @@ namespace WoolichDecoder
 
         private void btnExportCSV_Click(object sender, EventArgs e)
         {
+
+            PacketFormat exportFormat = PacketFormat.Unknown;
+
+            if (cmbBikeType.SelectedItem != null)
+            {
+                var selectedPair = (KeyValuePair<int, string>)cmbBikeType.SelectedItem;
+                exportFormat = (PacketFormat)selectedPair.Key;
+            }
+            else
+            {
+                MessageBox.Show("Bike Type not selected");
+                return;
+            }
 
             WoolichLog exportItem = null;
 
@@ -802,7 +953,7 @@ namespace WoolichDecoder
             else if(cmbExportType.SelectedIndex == 1)
             {
                 // "Export Analysis Only"
-                exportItem = exportLogs;
+                exportItem = analysisLogs;
             }
             else
             {
@@ -813,21 +964,34 @@ namespace WoolichDecoder
 
             int packetCount = exportItem.GetPacketCount();
 
+            if (packetCount == 0) {
+                MessageBox.Show("Nothing to export");
+                return;
+            }
+
+
             int count = 0;
             List<int> combinedCols = new List<int>();
 
 
-            if (exportItem.packetFormat == PacketFormat.Yamaha)
+
+            if (exportFormat == PacketFormat.Yamaha)
             {
                 log($"Exporting for Yamaha");
                 SetMT09_StaticColumns();
             }
-            else if (exportItem.packetFormat == PacketFormat.Kawasaki)
+            else if (exportFormat == PacketFormat.Kawasaki)
             {
                 log($"Exporting for Kawasaki");
                 SetZX10R_StaticColumns();
             }
-            else if (exportItem.packetFormat == PacketFormat.BMW)
+            else if (exportFormat == PacketFormat.Suzuki)
+            {
+                log($"Exporting for Suzuki");
+                // this.presumedStaticColumns.Clear();
+                SetSuzuki_StaticColumns();
+            }
+            else if (exportFormat == PacketFormat.BMW)
             {
                 log($"Exporting for BMW");
 
@@ -862,40 +1026,91 @@ namespace WoolichDecoder
                     string csvHeader = exportItem.GetHeader(this.presumedStaticColumns, combinedCols, includeRaws);
                     outputFile.WriteLine(csvHeader);
 
-                    foreach (var packet in exportItem.GetPackets())
+                    if (exportItem.packetFormat == PacketFormat.Suzuki)
                     {
 
-                        var exportLine = WoolichLog.getCSV(packet.Value, packet.Key, exportItem.packetFormat, this.presumedStaticColumns, combinedCols, includeRaws);
-                        outputFile.WriteLine(exportLine);
-                        outputFile.Flush();
-                        count++;
+                        // suzuki looks like it has a data rate issue. it has large and small packets. small packets only seem to have AFR 
+                        // exportItem.BackfillShortPackets();
 
-                        if (count > 100000 && exportItem.packetFormat != PacketFormat.Yamaha)
+                        WoolichLog.getCSV_Suzuki(outputFile, exportItem.GetPackets(), this.presumedStaticColumns);
+                    }
+                    else if(exportItem.packetFormat == PacketFormat.Kawasaki)
+                    {
+
+                        // suzuki looks like it has a data rate issue. it has large and small packets. small packets only seem to have AFR 
+                        // exportItem.BackfillShortPackets();
+
+                        WoolichLog.getCSV_Kawasaki(outputFile, exportItem.GetPackets(), this.presumedStaticColumns);
+                    }
+                    else if (exportItem.packetFormat == PacketFormat.Yamaha)
+                    {
+
+                        // suzuki looks like it has a data rate issue. it has large and small packets. small packets only seem to have AFR 
+                        // exportItem.BackfillShortPackets();
+
+                        WoolichLog.getCSV_MT09(outputFile, exportItem.GetPackets(), this.presumedStaticColumns, includeRaws);
+                    }
+                    else
+                    {
+
+                        foreach (var packet in exportItem.GetPackets())
                         {
-                            // if the file format is unknown then limit the output to make excel easier to use.
-                            // break;
-                        }
 
+                            var exportLine = WoolichLog.getCSV(packet.Value, packet.Key, exportFormat, this.presumedStaticColumns, combinedCols, includeRaws);
+                            outputFile.WriteLine(exportLine);
+                            outputFile.Flush();
+                            count++;
+
+                            if (count > 100000 && exportItem.packetFormat == PacketFormat.Unknown)
+                            {
+                                // if the file format is unknown then limit the output to make excel easier to use.
+                                // break;
+                            }
+
+                        }
                     }
                     outputFile.Close();
                 }
-                MessageBox.Show("CSV Export Complete", "Export Complete");
+                var result = MessageBox.Show(
+                    $"CSV Export Complete\n\nFile saved to: {csvFileName}\n\nWould you like to open the folder?",
+                    "Export Complete",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Information);
+
+                if (result == DialogResult.Yes)
+                {
+                    OpenFileLocation(csvFileName);
+                }
                 log($"CSV written to disk");
             }
-            catch
+            catch(Exception ex)
             {
+                var error = ex.ToString();
                 MessageBox.Show("File is open dummy");
             }
 
         }
 
 
+        private void OpenFileLocation(string filePath)
+        {
+            try
+            {
+                // This opens Windows Explorer and selects the file
+                Process.Start("explorer.exe", $"/select,\"{filePath}\"");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Unable to open file location: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+        }
+
 
         private void btnAutoTuneExport_Click(object sender, EventArgs e)
         {
             WoolichLog exportItem = logs;
 
-            if (exportItem.packetFormat != PacketFormat.Yamaha)
+            if (exportItem.PacketLength != (int)PacketFormat.Yamaha)
             {
                 MessageBox.Show("This bikes file cannot be adjusted by this software yet.");
                 return;
@@ -987,7 +1202,7 @@ namespace WoolichDecoder
 
                     // This one is tricky due to wooliches error in decoding the etv packet.
                     // { id = 4, type = PacketFormat.Yamaha, option = "Remove Gear 1, 2 & 3 engine braking" },
-                    if (packet.Value.getCorrectETV() <= 1.2 && outputGear < 4 && selectedFilterOptions.Contains(autoTuneFilterOptions.getListValue(4, PacketFormat.Yamaha)))
+                    if (packet.Value.getCorrectETV(PacketFormat.Yamaha) <= 1.2 && outputGear < 4 && selectedFilterOptions.Contains(autoTuneFilterOptions.getListValue(4, PacketFormat.Yamaha)))
                     {
                         // We aren't interested closed throttle engine braking.
 
@@ -1006,7 +1221,7 @@ namespace WoolichDecoder
 
                         // adjust the etv packet to make woolich put it in the right place.
                         // We know what the correct value should be so get that first.
-                        double correctETV = exportPackets.getCorrectETV();
+                        double correctETV = exportPackets.getCorrectETV(PacketFormat.Yamaha);
                         // Then use the wollich formula (reversed) to create the binary value. 
                         byte hackedETVbyte = (byte)((correctETV * 1.66) + 38);
                         diff = diff + hackedETVbyte - exportPackets[18];
