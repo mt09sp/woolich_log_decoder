@@ -29,9 +29,9 @@ namespace WoolichDecoder.Models
         }
 
         // kwaka and yamaha
-        public static int getRPM(this byte[] packet, Boolean isSuzuki = false)
+        public static int getRPM(this byte[] packet, PacketFormat packetFormat, bool isRaw = false)
         {
-            if (isSuzuki)
+            if (packetFormat == PacketFormat.Suzuki && isRaw == false)
             {
                 // y = 0.390667x - 0.569767
 
@@ -40,6 +40,7 @@ namespace WoolichDecoder.Models
                 // 0.390 +9
                 return (int)Math.Round(((packet[10] << 8) + packet[11]) * 0.390625 - 0.44, 0);
             }
+            // Same for kawasaki and yamaha
             return ((packet[10] << 8) + packet[11]);
         }
 

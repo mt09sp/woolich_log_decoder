@@ -41,8 +41,8 @@ namespace WoolichDecoder.Models
 
             LogTime = packet.Key + " t";
             milliseconds = packet.Value.getMilliseconds();
-            RPM = packet.Value.getRPM(true);
-            RPMRaw = packet.Value.getRPM();
+            RPM = packet.Value.getRPM(PacketFormat.Suzuki);
+            RPMRaw = packet.Value.getRPM(PacketFormat.Suzuki,true);
             AFR = packet.Value.getAFR(PacketFormat.Suzuki);
             WoolichTPS = packet.Value.getWoolichTPS(PacketFormat.Suzuki);
             ActualTPS = packet.Value.getTrueTPS(PacketFormat.Suzuki);
@@ -187,7 +187,7 @@ namespace WoolichDecoder.Models
 
             LogTime = packet.Key + " t";
             milliseconds = packet.Value.getMilliseconds();
-            RPM = packet.Value.getRPM();
+            RPM = packet.Value.getRPM(PacketFormat.Kawasaki);
             // RPMRaw = packet.Value.getRPM();
             AFR = packet.Value.getAFR(PacketFormat.Kawasaki);
             WoolichTPS = packet.Value.getWoolichTPS(PacketFormat.Kawasaki); // TPS 65 66

@@ -7,61 +7,27 @@ using System.Threading.Tasks;
 
 namespace WoolichDecoder.Models.CsvModels
 {
-    public class SuzukiCsvModel
+    public class SuzukiCsvModel : BaseCsvModel
     {
-
-        PacketFormat packetFormat = PacketFormat.Suzuki;
-
-        public string LogTime = string.Empty;
-        public double WoolichTPS;
-        public double ActualTPS;
-        public int RPM;
-        public int RPMRaw;
-        public double IAP;
-        public double AFR;
-        public double CoolantTemp;
-        public double InletAirTemp;
-        public int Gear;
-        public double WoolichEtv; // strange override on 67-68
-        public double AtmPressure; // 16
-        public double ManPressure; // 14
-        public double Ignition;
-        public double STP;
-        public int MS; // unknown
-        public bool Clutch;
-        public bool Pair;
-        public int milliseconds;
-        public string P33 = string.Empty;
-        // These stay as raw bytes
-        public byte[] packets = new byte[79];
-
-        public void PopulateFromLongPacket(KeyValuePair<string, byte[]> packet)
+        // Initialize the packet format for Suzuki
+        public SuzukiCsvModel()
         {
-            for (int i = 0; i < packet.Value.Length; i++)
-            {
-                packets[i] = packet.Value[i];
-            }
+            packetFormat = PacketFormat.Suzuki;
+            packets = new byte[79];
+        }
 
-            LogTime = packet.Key + " t";
-            milliseconds = packet.Value.getMilliseconds();
-            RPM = packet.Value.getRPM(true);
-            RPMRaw = packet.Value.getRPM();
-            AFR = packet.Value.getAFR(packetFormat);
-            WoolichTPS = packet.Value.getWoolichTPS(packetFormat);
-            ActualTPS = packet.Value.getTrueTPS(packetFormat);
-            
-            CoolantTemp = packet.Value.getEngineTemperature(packetFormat);
-            STP = packet.Value.getWoolichSTP(packetFormat);
-            Ignition = packet.Value.getIgnitionOffset(packetFormat);
+        // Suzuki-specific properties
+        public string P33 = string.Empty;
+
+        public override void PopulateFromLongPacket(KeyValuePair<string, byte[]> packet)
+        {
+            // Call base method to populate common properties
+            PopulateBaseFromLongPacket(packet);
+
+            // Suzuki-specific properties
             Pair = (packet.Value[32] & 0b00000001) != 0;
             Clutch = (packet.Value[33] & 0b00010000) != 0;
             P33 = packet.Value[33].ToBitString(0b11111111);
-            AtmPressure = packet.Value.getATMPressure(packetFormat);
-            ManPressure = packet.Value.getMAP(packetFormat);
-            IAP = packet.Value.getIAP(packetFormat);
-            InletAirTemp = packet.Value.getInletTemperature(packetFormat);
-            Gear = packet.Value.getGear(packetFormat);
-            WoolichEtv = packet.Value.getCorrectETV(packetFormat);
         }
 
         public void PopulateFromShortPacket(KeyValuePair<string, byte[]> shortPacket, SuzukiCsvModel priorPacket, SuzukiCsvModel nextPacket)
@@ -90,8 +56,6 @@ namespace WoolichDecoder.Models.CsvModels
             var timediff = (nextPacket.milliseconds - priorPacket.milliseconds);
             double ratio = (double)(milliseconds - priorPacket.milliseconds) / timediff;
 
-
-
             RPM = InterpolateValue(priorPacket.RPM, nextPacket.RPM, ratio);
             WoolichTPS = InterpolateValue(priorPacket.WoolichTPS, nextPacket.WoolichTPS, ratio, 2);
             ActualTPS = InterpolateValue(priorPacket.ActualTPS, nextPacket.ActualTPS, ratio, 2);
@@ -112,29 +76,6 @@ namespace WoolichDecoder.Models.CsvModels
             WoolichEtv = InterpolateValue(priorPacket.WoolichEtv, nextPacket.WoolichEtv, ratio, 3);
 
             AFR = packets.getAFR(packetFormat);
-
         }
-
-
-        private T InterpolateValue<T>(T priorValue, T nextValue, double ratio, int? decimalPlaces = null)
-            where T : struct, IConvertible
-        {
-            double prior = Convert.ToDouble(priorValue);
-            double next = Convert.ToDouble(nextValue);
-            double interpolated = prior + (next - prior) * ratio;
-
-            if (decimalPlaces.HasValue)
-            {
-                interpolated = Math.Round(interpolated, decimalPlaces.Value);
-            }
-
-            return (T)Convert.ChangeType(interpolated, typeof(T));
-        }
-
-
     }
-
-
-
-
 }

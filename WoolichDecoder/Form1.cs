@@ -1172,7 +1172,7 @@ namespace WoolichDecoder
                     }
 
                     // { id = 5, type = PacketFormat.Yamaha, option = "Remove non launch gear 1" },
-                    if (outputGear == 1 && (packet.Value.getRPM() < 1000 || packet.Value.getRPM() > 4500) && selectedFilterOptions.Contains(autoTuneFilterOptions.getListValue(5, PacketFormat.Yamaha)))
+                    if (outputGear == 1 && (packet.Value.getRPM(PacketFormat.Yamaha) < 1000 || packet.Value.getRPM(PacketFormat.Yamaha) > 4500) && selectedFilterOptions.Contains(autoTuneFilterOptions.getListValue(5, PacketFormat.Yamaha)))
                     {
                         // We don't want first gear but we do want launch RPM ranges
                         // Exclude anything outside of the launch ranges.
@@ -1188,7 +1188,7 @@ namespace WoolichDecoder
 
                     // Get rid of anything below 1200 RPM
                     // { id = 3, type = PacketFormat.Yamaha, option = "Exclude below 1200 rpm" },
-                    if (outputGear != 1 && packet.Value.getRPM() <= 1200 && selectedFilterOptions.Contains(autoTuneFilterOptions.getListValue(3, PacketFormat.Yamaha)))
+                    if (outputGear != 1 && packet.Value.getRPM(PacketFormat.Yamaha) <= 1200 && selectedFilterOptions.Contains(autoTuneFilterOptions.getListValue(3, PacketFormat.Yamaha)))
                     {
                         // We aren't interested in below idle changes.
 
