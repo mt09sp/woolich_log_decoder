@@ -58,7 +58,7 @@ namespace WoolichDecoder.Models
             IAP = packet.Value.getIAP(PacketFormat.Suzuki);
             InletAirTemp = packet.Value.getInletTemperature(PacketFormat.Suzuki);
             Gear = packet.Value.getGear(PacketFormat.Suzuki);
-            WoolichEtv = packet.Value.getCorrectETV(PacketFormat.Suzuki);
+            WoolichEtv = packet.Value.getCorrectETV(PacketFormat.Suzuki, null);
         }
 
         public void PopulateFromShortPacket(KeyValuePair<string, byte[]> shortPacket, SuzukiCsvModelDead priorPacket, SuzukiCsvModelDead nextPacket)
@@ -194,7 +194,7 @@ namespace WoolichDecoder.Models
             ActualTPS = packet.Value.getTrueTPS(PacketFormat.Kawasaki); // TPS 65 66
             TPSMultiplier = packet.Value.getTPSMultiplier(PacketFormat.Kawasaki);
 
-            ActualEtv = packet.Value.getCorrectETV(PacketFormat.Kawasaki); // ETV 67 68
+            ActualEtv = packet.Value.getCorrectETV(PacketFormat.Kawasaki, null); // ETV 67 68
             WoolichEtv = packet.Value.getWoolichBadETV(PacketFormat.Kawasaki); // ETV 67 68
 
             Ignition = packet.Value.getIgnitionOffset(PacketFormat.Kawasaki);

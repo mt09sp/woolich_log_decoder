@@ -40,7 +40,14 @@ namespace WoolichDecoder.Models
                 // 0.390 +9
                 return (int)Math.Round(((packet[10] << 8) + packet[11]) * 0.390625 - 0.44, 0);
             }
-            // Same for kawasaki and yamaha
+
+            if (packetFormat == PacketFormat.HondaKline || packetFormat == PacketFormat.HondaKlineVFR  || packetFormat == PacketFormat.HondaKlineCB )
+            {
+                return ((packet[10] << 8) + packet[11]);
+            }
+
+            // Same for kawasaki and yamaha and HondaKline.
+            // Honda OBD doesn't use this because it doesn't have the same packet structure.
             return ((packet[10] << 8) + packet[11]);
         }
 
@@ -104,6 +111,45 @@ namespace WoolichDecoder.Models
                     return TPS;
                 }
             }
+            else if (packetFormat == PacketFormat.HondaKlineVFR)
+            {
+                // P12 is the raw sensor value (relative). however Honda present a zeroed absolute value in P13
+                // Needs confirming
+
+                // Base formula. See RefineSequentialDerivedPackets for adjusted
+                // var TPS = Math.Round(((double)(packet[12] - 11.0) / 1.01), 1);
+                // Alternative: var TPS = Math.Round(((double)(packet[13]) / 1.55), 1);
+
+                // Accurate with 1.01 however using 1.00 gives 1 bit headroom at 100%
+                var TPS = Math.Round(((double)(packet[12] - 11.0) / 1.00), 1);
+                if (TPS > 100)
+                {
+                    return 100.0;
+                }
+                if (TPS < 0)
+                {
+                    return 0.0;
+                }
+                return TPS;
+            }
+            else if (packetFormat == PacketFormat.HondaKlineCB)
+            {
+                // P12 is the raw sensor value (relative) 26 to 227. however Honda present a zeroed absolute value in P13 that's still a little bit iffy. 0 to 157
+                // Correct using Riki's 21 and 63 files
+
+                // Base formula. See RefineSequentialDerivedPackets for adjusted
+                var TPS = Math.Round(((double)(packet[12] - 26) / 2.00 ), 1);// Checked for CB - Unknown for VFR
+                if (TPS > 100)
+                {
+                    return 100.0;
+                }
+                if (TPS < 0)
+                {
+                    return 0.0;
+                }
+                return TPS;
+            }
+
             return 0.0;
         }
 
@@ -162,6 +208,47 @@ namespace WoolichDecoder.Models
                     return TPS;
                 }
             }
+            else if (packetFormat == PacketFormat.HondaKlineVFR)
+            {
+                // PID 0x49
+                // Needs confirming
+                // var TPS = Math.Round(((double)(packet[12] * 1.1111) - 24.444), 1);
+
+                // Base formula. See RefineSequentialDerivedPackets for adjusted
+                var TPS = Math.Round(((double)(packet[12] - 22)/ 0.9), 1);
+                if (TPS > 100)
+                {
+                    return 100.0;
+                }
+                if (TPS < 0)
+                {
+                    return 0.0;
+                }
+                return TPS;
+            }
+            else if (packetFormat == PacketFormat.HondaKlineCB)
+            {
+
+                // For the CB21 they don't have ride by wire. TPS is the fuel map value.
+                // *0.4902-12.745
+                // Correct using Riki's 21 and 63 files
+                //var TPS = Math.Round(((double)(packet[12] * 0.4902) - 12.745), 1);
+
+                // Base formula. See RefineSequentialDerivedPackets for adjusted
+                var WTPS = Math.Round(((double)(packet[12] - 26) / 2.04), 1); // Checked for CB - Unknown for VFR
+                if (WTPS > 100)
+                {
+                    return 100.0;
+                }
+                if (WTPS < 0)
+                {
+                    return 0.0;
+                }
+                return WTPS;
+            }
+
+            // ROUND(B12 *0.4902-12.745,3)
+
             return 0.0;
         }
 
@@ -172,23 +259,36 @@ namespace WoolichDecoder.Models
                 var TPSRaw = packet[15];
                 return TPSRaw;
             }
+            if (packetFormat == PacketFormat.HondaKlineCB || packetFormat == PacketFormat.HondaKlineVFR)
+            {
+                // don't have multiple sources here.
+                return packet.getActualTPSRaw(packetFormat);
+            }
+
             return -99;
         }
 
 
         // ActualTPSRaw = True TPS raw
         // PID 0x49 (Accelerator Pedal Position D)
-        public static double getActualTPSRaw(this byte[] packet, PacketFormat packetFormat)
+        public static int getActualTPSRaw(this byte[] packet, PacketFormat packetFormat)
         {
 
 
             if (packetFormat == PacketFormat.Yamaha)
             {
                 // PID 0x49
-                double actualTPS = (packet[12] << 8) + packet[13];
+                int actualTPS = (packet[12] << 8) + packet[13];
                 return actualTPS;
             }
-            return 0.0;
+            
+            if (packetFormat == PacketFormat.HondaKlineCB || packetFormat == PacketFormat.HondaKlineVFR)
+            {
+                // Relative TPS. raw from the sensor.
+                int actualTPS = packet[12];
+                return actualTPS;
+            }
+            return 0;
         }
 
         // getActualTPS2
@@ -203,9 +303,14 @@ namespace WoolichDecoder.Models
                 double actualTPS = (packet[16] << 8) + packet[17];
                 return actualTPS;
             }
+            if (packetFormat == PacketFormat.HondaKlineCB || packetFormat == PacketFormat.HondaKlineVFR)
+            {
+                // Absolute TPS. Zeroed by the ECU. 1.55 is correct
+                double actualTPS = Math.Round(packet[13]/1.55,1);
+                return actualTPS;
+            }
             return 0.0;
         }
-
 
 
 
@@ -236,6 +341,19 @@ namespace WoolichDecoder.Models
                 var ETV = ((packet[67] << 8) + packet[68]);
                 return ETV;
             }
+            else if (packetFormat == PacketFormat.HondaKlineVFR)
+            {
+                // TODO: work out the formula
+                // B36 is the Relative
+                // B37 is the zeroed value.
+                double actualTPS = Math.Round((double)(packet[36] - 31)/1.66,1); // Formula is still unknown... Is it? Woolich formula is unknown as it's not in the XML
+                return actualTPS;
+            }
+            else if (packetFormat == PacketFormat.HondaKlineCB)
+            {
+                // Not ride by wire. Just pass back the Woolich TPS
+                return packet.getWoolichTPS(packetFormat);
+            }
             else
             {
                 return 0.0;
@@ -247,17 +365,21 @@ namespace WoolichDecoder.Models
 
         // Post recall. TPS (ETV) sensor was recalibrated.
         // PID 0x11
-        public static double getCorrectETV(this byte[] packet, PacketFormat packetFormat)
+        public static double getCorrectETV(this byte[] packet, PacketFormat packetFormat, int? minThrottle)
         {
             if (packetFormat == PacketFormat.Yamaha)
             {
 
+                int zeroThrottle = 35;
                 // etv raw (18) -> Example Min = 35, max = 213. Calculation = (col[18] - min) / ((max - min) / 100)
-
+                if (minThrottle != null)
+                {
+                    zeroThrottle = minThrottle.Value + 1;
+                }
 
                 // Because there were some 34's in there??? <-- 34 were no rpm. throttle body???
                 // shifting to 35
-                var ETV = Math.Round(((double)packet[18] - 35) / 1.78, 2);
+                var ETV = Math.Round(((double)packet[18] - (zeroThrottle)) / 1.78, 2);
                 return ETV;
             }
             else if (packetFormat == PacketFormat.Kawasaki)
@@ -274,6 +396,21 @@ namespace WoolichDecoder.Models
                 var ETV = ((packet[67] << 8) + packet[68]);
                 return ETV;
             }
+            else if (packetFormat == PacketFormat.HondaKlineVFR)
+            {
+                // TODO: work out the formula
+                // B36 is the Relative
+                // B37 is the zeroed value.
+
+                // Base formula. See RefineSequentialDerivedPackets for adjusted
+                double actualETV = Math.Round((double)(packet[36] - 31) / 1.66,1);
+                return actualETV;
+            }
+            else if (packetFormat == PacketFormat.HondaKlineCB)
+            {
+                // Not ride by wire. Just pass back the TPS
+                return packet.getTrueTPS(packetFormat); // P[12]
+            }
             else
             {
                 return 0.0;
@@ -281,7 +418,7 @@ namespace WoolichDecoder.Models
         }
 
         // Currently raw.
-        public static int getEcuETV(this byte[] packet, PacketFormat packetFormat)
+        public static double getEcuETV(this byte[] packet, PacketFormat packetFormat)
         {
             if (packetFormat == PacketFormat.Yamaha)
             {
@@ -290,6 +427,16 @@ namespace WoolichDecoder.Models
                 var ecuETV = packet[19];
                 return ecuETV;
             }
+            else if (packetFormat == PacketFormat.HondaKlineVFR)
+            {
+                // TODO: work out the formula
+                // B36 is the Relative
+                // B37 is the zeroed value. Not likely to be 0 to 100. Formula needed.
+
+                // Base formula. See RefineSequentialDerivedPackets for adjusted
+                double actualETV = Math.Round((double)packet[37] / 1.63, 1);
+                return actualETV;
+            }
             else
             {
                 return 0;
@@ -297,7 +444,7 @@ namespace WoolichDecoder.Models
         }
 
         // Currently raw.
-        public static int getActualEtv2(this byte[] packet, PacketFormat packetFormat)
+        public static double getActualEtv2(this byte[] packet, PacketFormat packetFormat)
         {
             if (packetFormat == PacketFormat.Yamaha)
             {
@@ -306,6 +453,11 @@ namespace WoolichDecoder.Models
                 // PID 0x47 Absolute throttle position B
                 var ecuETV = packet[14];
                 return ecuETV;
+            }
+            else if (packetFormat == PacketFormat.HondaKlineVFR)
+            {
+                // Base formula. See RefineSequentialDerivedPackets for adjusted
+                return packet.getEcuETV(packetFormat); // P[37]
             }
             else
             {
@@ -321,6 +473,11 @@ namespace WoolichDecoder.Models
 
                 // PID 0x11 (18)
                 var ecuETV = packet[18];
+                return ecuETV;
+            }
+            else if (packetFormat == PacketFormat.HondaKlineVFR)
+            {
+                var ecuETV = packet[36];
                 return ecuETV;
             }
             else
@@ -386,7 +543,13 @@ namespace WoolichDecoder.Models
             else if (packetFormat == PacketFormat.Kawasaki || packetFormat == PacketFormat.Suzuki)
             {
 
-                return Math.Round(packet.getATMPressure(packetFormat) - packet.getMAP(packetFormat) , 2);
+                return Math.Round(packet.getATMPressure(packetFormat) - packet.getMAP(packetFormat), 2);
+            }
+            else if (packetFormat == PacketFormat.HondaKlineVFR || packetFormat == PacketFormat.HondaKlineCB)
+            {
+                // confirmed same for both.
+
+                return packet[19]; 
             }
             else
             {
@@ -400,8 +563,7 @@ namespace WoolichDecoder.Models
 
             if (packetFormat == PacketFormat.Yamaha)
             {
-
-                return -99;
+                return packet.getIAP(packetFormat);
             }
             else if (packetFormat == PacketFormat.Kawasaki)
             {
@@ -412,6 +574,12 @@ namespace WoolichDecoder.Models
             {
 
                 return Math.Round(((packet[14] - 29.562 ) / 2.066116), 2);
+            }
+            else if (packetFormat == PacketFormat.HondaKlineVFR || packetFormat == PacketFormat.HondaKlineCB)
+            {
+                // confirmed same for both. copy of IAP which is output directly 
+
+                return packet.getIAP(packetFormat);
             }
             else
             {
@@ -438,14 +606,16 @@ namespace WoolichDecoder.Models
             {
                     return Math.Round(packet[64] / 10.0, 2);
             }
+            else if (packetFormat == PacketFormat.HondaKlineVFR || packetFormat == PacketFormat.HondaKlineCB)
+            {
+                // Unknown. No data collected yet
+                return -99;
+            }
             else
             {
                 return -99;
             }
         }
-
-
-
 
 
         public static double getEngineTemperature(this byte[] packet, PacketFormat packetFormat)
@@ -463,6 +633,11 @@ namespace WoolichDecoder.Models
             else if (packetFormat == PacketFormat.Kawasaki)
             {
                 return Math.Round(((packet[25] << 8) + packet[26]) * 0.5 - 60, 2);
+            }
+            else if (packetFormat == PacketFormat.HondaKlineVFR || packetFormat == PacketFormat.HondaKlineCB)
+            {
+                // Confirmed
+                return (packet[15] - 40);
             }
             else
             {
@@ -486,6 +661,11 @@ namespace WoolichDecoder.Models
             {
 
                 return Math.Round((((packet[15] << 8) + packet[16]) * 0.484) - 14.308, 2);
+            }
+            else if (packetFormat == PacketFormat.HondaKlineVFR || packetFormat == PacketFormat.HondaKlineCB)
+            {
+                // Confirmed. Not actually logged
+                return -99;
             }
             else
             {
@@ -514,6 +694,16 @@ namespace WoolichDecoder.Models
 
                 return Math.Round(((packet[27] << 8) + packet[28]) * 0.5 - 60, 2);
             }
+            else if (packetFormat == PacketFormat.HondaKlineCB)
+            {
+                // Confirmed
+                return (packet[17] - 40);
+            }
+            else if (packetFormat == PacketFormat.HondaKlineVFR)
+            {
+                // Confirmed but also P21
+                return (packet[17] - 40);
+            }
             else
             {
                 return -99;
@@ -525,6 +715,11 @@ namespace WoolichDecoder.Models
             if (packetFormat == PacketFormat.Yamaha)
             {
                 return packet[28] / 2.0;
+            }
+            else if (packetFormat == PacketFormat.HondaKlineCB)
+            {
+                // Confirmed
+                return (packet[24] << 8) + packet[25];
             }
             else
             {
@@ -572,6 +767,19 @@ namespace WoolichDecoder.Models
 
                 return Math.Round((packet[18] * 0.4) - 12.5, 1);
             }
+            else if (packetFormat == PacketFormat.HondaKlineCB)
+            {
+                // 128 - tdc
+                // Confirmed
+                return packet[26] * 0.5 - 64;
+            }
+            else if (packetFormat == PacketFormat.HondaKlineVFR)
+            {
+                // 128 - tdc
+                // Confirmed... Also P30
+                return packet[26] * 0.5 - 64;
+            }
+
             else
             {
                 return 0.0;
@@ -659,6 +867,11 @@ namespace WoolichDecoder.Models
                 // outputString += $"{packet[40]},"; // Speedo
                 return (packet[40]);
             }
+            else if (packetFormat == PacketFormat.HondaKlineVFR || packetFormat == PacketFormat.HondaKlineCB)
+            {
+                // outputString += $"{packet[40]},"; // Speedo
+                return (packet[23]);
+            }
             else
             {
                 return -99;
@@ -693,6 +906,11 @@ namespace WoolichDecoder.Models
             {
 
                 return packet[19];
+            }
+            else if (packetFormat == PacketFormat.HondaKlineVFR || packetFormat == PacketFormat.HondaKlineCB)
+            {
+                // Not part of Kline data set. And yeah i looked.
+                return -99;
             }
             else
             {

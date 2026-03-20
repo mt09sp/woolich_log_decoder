@@ -5,9 +5,11 @@ using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Net.Sockets;
 using System.Text;
 using System.Windows.Forms;
 using WoolichDecoder.Models;
+using WoolichDecoder.Models.WoolichLog;
 using WoolichDecoder.Settings;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.Window;
@@ -465,6 +467,10 @@ namespace WoolichDecoder
 
         }
 
+        public void SetHonda_StaticColumns()
+        {
+        }
+
         private void dataGridView1_CellContentClick(object sender, DataGridViewCellEventArgs e)
         {
 
@@ -571,9 +577,15 @@ namespace WoolichDecoder
                 // we have an exact match. Yamaha, Kawasaki, Suzuki, etc
                 cmbBikeType.SelectedItem = new KeyValuePair<int, string>((int)pf, pf.ToString());
             }
+            else
+            {
+                MessageBox.Show("Packet Format is unknown", "Warning");
+            }
 
             // Set the packet format in the logs object
             logs.packetFormat = pf;
+            var minThrottle = 1000;
+            var maxThrottle = -99;
 
             // Every row has a row packet prefix despite it being identical for every row.
             while (!eof)
@@ -587,7 +599,13 @@ namespace WoolichDecoder
                 }
 
                 // It's wierd that I have to do - 2 but it works... I hope.
-                int calculatedRemainingPacketBytes = (int)packetPrefixBytes[3] - 2;
+                int subtractor = 2;
+                if (pf == PacketFormat.HondaOBD || pf == PacketFormat.HondaKline)
+                {
+                    subtractor = 1;
+                }
+
+                int calculatedRemainingPacketBytes = (int)packetPrefixBytes[3] - subtractor;
 
                 byte[] packetBytes = wrlLogReader.ReadBytes(calculatedRemainingPacketBytes);
                 if (packetBytes.Length < calculatedRemainingPacketBytes)
@@ -598,8 +616,61 @@ namespace WoolichDecoder
 
                 int totalPacketLength = (int)packetPrefixBytes[3] + 3;
 
+                if (pf == PacketFormat.HondaOBD)
+                {
+                    // Honda CBR650R 24/25 has some crazy variable packet lengths. And also packet validity.
+                    // Actually the packets come in small updates of varying frequency.
+                    // It seems that the 5th byte (i.e. packetPrefixBytes[4]) has to be 06 or it's not valid.
+                    if ((int)packetPrefixBytes[4] != 0x06)
+                    {
+                        // Logging.
+                        this.txtLogging.AppendText($"Invalid Packet found. {(int)packetPrefixBytes[4]}." + Environment.NewLine);
+                    }
 
-                logs.AddPacket(packetPrefixBytes.Concat(packetBytes).ToArray(), totalPacketLength);
+                }
+
+                // Stick the prefix and the rest of the packet back together
+                var packet = packetPrefixBytes.Concat(packetBytes).ToArray();
+
+                if (pf == PacketFormat.Yamaha)
+                {
+                    if (packet[18] < minThrottle)
+                    {
+                        minThrottle = packet[18];
+                    }
+                    if (packet[18] > maxThrottle)
+                    {
+                        maxThrottle = packet[18];
+                    }
+
+                }
+                if (pf == PacketFormat.HondaKline)
+                {
+
+
+                    // TPS_A
+                    // Not TPS_R which is P12
+                    if (packet[13] < minThrottle)
+                    {
+                        minThrottle = packet[13];
+                    }
+                    if (packet[13] > maxThrottle)
+                    {
+                        maxThrottle = packet[13];
+                    }
+
+                }
+
+
+                try
+                {
+                    logs.AddPacket(packet, totalPacketLength);
+                }
+                catch (Exception ex)
+                {
+                    this.txtLogging.AppendText($"Error adding packet" + Environment.NewLine);
+                    break;
+                }
             }
 
             aTFCheckedListBox.Items.Clear();
@@ -612,9 +683,30 @@ namespace WoolichDecoder
                 aTFCheckedListBox.SetItemCheckState(i, CheckState.Checked);
             }
 
+            double linearity = 0;
+            if (pf == PacketFormat.Yamaha || pf == PacketFormat.HondaKline)
+            {
+                logs.SetMinThrottle(minThrottle);
+                logs.SetMaxThrottle(maxThrottle);
+                linearity = Math.Round(((double)(maxThrottle - minThrottle))/100.0,2);
+            }
+
+            if (pf == PacketFormat.HondaKline)
+            {
+                // converts from kline to  PacketFormat.HondaKlineCB || PacketFormat.HondaKlineVFR
+                logs.CorrectHondaKlinePacketFormat();
+            }
+
+
+
 
             lblExportPacketsCount.Text = $"{logs.GetPacketCount()}";
             this.txtLogging.AppendText($"Load complete. {logs.GetPacketCount()} packets found." + Environment.NewLine);
+
+            this.txtLogging.AppendText($"Min throttle. {minThrottle}." + Environment.NewLine);
+            this.txtLogging.AppendText($"Max throttle. {maxThrottle}." + Environment.NewLine);
+            this.txtLogging.AppendText($"Throttle linearity. {linearity}." + Environment.NewLine);
+
 
             // All finished. Time to close the files.
             wrlLogReader.Close();
@@ -959,7 +1051,7 @@ namespace WoolichDecoder
             {
                 exportItem = logs;
                 includeRaws = true;
-                csvFileName = outputFileNameWithoutExtension + $"_r.csv";
+                csvFileName = outputFileNameWithoutExtension + $"_raw.csv";
             }
 
             int packetCount = exportItem.GetPacketCount();
@@ -991,6 +1083,18 @@ namespace WoolichDecoder
                 // this.presumedStaticColumns.Clear();
                 SetSuzuki_StaticColumns();
             }
+            else if (exportFormat == PacketFormat.HondaOBD)
+            {
+                log($"Exporting for HondaOBD");
+                // I cant remember why we do this.
+                // SetSuzuki_StaticColumns();
+            }
+            else if (exportItem.packetFormat == PacketFormat.HondaKlineCB || exportItem.packetFormat == PacketFormat.HondaKlineVFR)
+            {
+                log($"Exporting for HondaKline");
+                // I cant remember why we do this.
+                // SetSuzuki_StaticColumns();
+            }
             else if (exportFormat == PacketFormat.BMW)
             {
                 log($"Exporting for BMW");
@@ -1021,10 +1125,23 @@ namespace WoolichDecoder
             try
             {
 
+                List<string> alerts = new List<string>();
+
+
                 using (StreamWriter outputFile = new StreamWriter(csvFileName))
                 {
+
+
+                    // **********************************************
+                    //
+                    // GET THE HEADER ROW
+                    //
+                    // **********************************************
                     string csvHeader = exportItem.GetHeader(this.presumedStaticColumns, combinedCols, includeRaws);
                     outputFile.WriteLine(csvHeader);
+
+
+
 
                     if (exportItem.packetFormat == PacketFormat.Suzuki)
                     {
@@ -1032,15 +1149,15 @@ namespace WoolichDecoder
                         // suzuki looks like it has a data rate issue. it has large and small packets. small packets only seem to have AFR 
                         // exportItem.BackfillShortPackets();
 
-                        WoolichLog.getCSV_Suzuki(outputFile, exportItem.GetPackets(), this.presumedStaticColumns);
+                        alerts = WoolichLog.getCSV_Suzuki(outputFile, exportItem.GetPackets(), this.presumedStaticColumns);
                     }
-                    else if(exportItem.packetFormat == PacketFormat.Kawasaki)
+                    else if (exportItem.packetFormat == PacketFormat.Kawasaki)
                     {
 
                         // suzuki looks like it has a data rate issue. it has large and small packets. small packets only seem to have AFR 
                         // exportItem.BackfillShortPackets();
 
-                        WoolichLog.getCSV_Kawasaki(outputFile, exportItem.GetPackets(), this.presumedStaticColumns);
+                        alerts = WoolichLog.getCSV_Kawasaki(outputFile, exportItem.GetPackets(), this.presumedStaticColumns);
                     }
                     else if (exportItem.packetFormat == PacketFormat.Yamaha)
                     {
@@ -1048,11 +1165,41 @@ namespace WoolichDecoder
                         // suzuki looks like it has a data rate issue. it has large and small packets. small packets only seem to have AFR 
                         // exportItem.BackfillShortPackets();
 
-                        WoolichLog.getCSV_MT09(outputFile, exportItem.GetPackets(), this.presumedStaticColumns, includeRaws);
+                        alerts = WoolichLog.getCSV_MT09(outputFile, exportItem, this.presumedStaticColumns, includeRaws);
                     }
+                    else if (exportItem.packetFormat == PacketFormat.HondaOBD)
+                    {
+                        if (!includeRaws)
+                        {
+                            alerts = WoolichLog.getCSV_HondaObd(outputFile, exportItem.GetPackets(), this.presumedStaticColumns, includeRaws);
+                        }
+                        else
+                        {
+                            alerts = WoolichLog.getCSV_HondaObd(outputFile, exportItem.GetPackets(), this.presumedStaticColumns, includeRaws);
+                            // WoolichLog.getCSV_StartingPointExample(outputFile, exportItem.GetPackets());
+                        }
+                    }
+
+                    else if (exportItem.packetFormat == PacketFormat.HondaKlineCB || exportItem.packetFormat == PacketFormat.HondaKlineVFR)
+                    {
+                        if (!includeRaws)
+                        {
+                            alerts = WoolichLog.getCSV_HondaKline(outputFile, exportItem.GetPackets(), this.presumedStaticColumns, includeRaws, exportItem.packetFormat);
+                        }
+                        else
+                        {
+                            alerts = WoolichLog.getCSV_HondaKline(outputFile, exportItem.GetPackets(), this.presumedStaticColumns, includeRaws, exportItem.packetFormat);
+
+                            // Include Raws
+                            // WoolichLog.getCSV_StartingPointExample(outputFile, exportItem.GetPackets());
+                        }
+                    }
+
                     else
                     {
+                        WoolichLog.getCSV_StartingPointExample(outputFile, exportItem.GetPackets());
 
+                        /*
                         foreach (var packet in exportItem.GetPackets())
                         {
 
@@ -1068,11 +1215,29 @@ namespace WoolichDecoder
                             }
 
                         }
+                        */
                     }
                     outputFile.Close();
                 }
+
+                if (alerts.Count > 0)
+                {
+                    foreach (var alert in alerts)
+                    {
+                        log(alert);
+                    }
+
+                    MessageBox.Show(
+                    "Alerts were raised. Check logs",
+                    "Unhandled data found",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Exclamation);
+
+                }
+
+
                 var result = MessageBox.Show(
-                    $"CSV Export Complete\n\nFile saved to: {csvFileName}\n\nWould you like to open the folder?",
+                    $"CSV Export Complete\n\nFile saved to:\n{csvFileName}\n\nWould you like to open the folder?",
                     "Export Complete",
                     MessageBoxButtons.YesNo,
                     MessageBoxIcon.Information);
@@ -1110,9 +1275,9 @@ namespace WoolichDecoder
         {
             WoolichLog exportItem = logs;
 
-            if (exportItem.PacketLength != (int)PacketFormat.Yamaha)
+            if (exportItem.packetFormat != PacketFormat.Yamaha)
             {
-                MessageBox.Show("This bikes file cannot be adjusted by this software yet.");
+                MessageBox.Show("This bikes file cannot be adjusted by this software yet. Use the online tool");
                 return;
             }
 
@@ -1202,7 +1367,7 @@ namespace WoolichDecoder
 
                     // This one is tricky due to wooliches error in decoding the etv packet.
                     // { id = 4, type = PacketFormat.Yamaha, option = "Remove Gear 1, 2 & 3 engine braking" },
-                    if (packet.Value.getCorrectETV(PacketFormat.Yamaha) <= 1.2 && outputGear < 4 && selectedFilterOptions.Contains(autoTuneFilterOptions.getListValue(4, PacketFormat.Yamaha)))
+                    if (packet.Value.getCorrectETV(PacketFormat.Yamaha, exportItem.MinThrottle) <= 1.2 && outputGear < 4 && selectedFilterOptions.Contains(autoTuneFilterOptions.getListValue(4, PacketFormat.Yamaha)))
                     {
                         // We aren't interested closed throttle engine braking.
 
@@ -1221,7 +1386,7 @@ namespace WoolichDecoder
 
                         // adjust the etv packet to make woolich put it in the right place.
                         // We know what the correct value should be so get that first.
-                        double correctETV = exportPackets.getCorrectETV(PacketFormat.Yamaha);
+                        double correctETV = exportPackets.getCorrectETV(PacketFormat.Yamaha, exportItem.MinThrottle);
                         // Then use the wollich formula (reversed) to create the binary value. 
                         byte hackedETVbyte = (byte)((correctETV * 1.66) + 38);
                         diff = diff + hackedETVbyte - exportPackets[18];

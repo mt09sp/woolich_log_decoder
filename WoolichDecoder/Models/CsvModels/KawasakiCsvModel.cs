@@ -21,10 +21,10 @@ namespace WoolichDecoder.Models.CsvModels
         public int P69;
         public int P70;
 
-        public override void PopulateFromLongPacket(KeyValuePair<string, byte[]> packet)
+        public override void PopulateFromLongPacket(KeyValuePair<string, byte[]> packet, int? minThrottle)
         {
             // Call base method to populate common properties
-            PopulateBaseFromLongPacket(packet);
+            PopulateBaseFromLongPacket(packet, minThrottle);
 
             // Kawasaki-specific properties
             Clutch = (packet.Value[33] & 0b11111111) != 0;

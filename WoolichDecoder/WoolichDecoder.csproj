@@ -104,6 +104,8 @@
     </Compile>
     <Compile Include="Models\CsvModels.cs" />
     <Compile Include="Models\CsvModels\BaseCsvModel.cs" />
+    <Compile Include="Models\CsvModels\HondaKlineCsvModel.cs" />
+    <Compile Include="Models\CsvModels\HondaObdCsvModel.cs" />
     <Compile Include="Models\CsvModels\KawasakiCsvModel.cs" />
     <Compile Include="Models\CsvModels\SuzukiCsvModel.cs" />
     <Compile Include="Models\CsvModels\YamahaCsvModel.cs" />
@@ -113,7 +115,12 @@
     <Compile Include="Models\StaticPacketColumn.cs" />
     <Compile Include="Models\ViewerModel.cs" />
     <Compile Include="Models\WoolichConversions.cs" />
-    <Compile Include="Models\WoolichLog.cs" />
+    <Compile Include="Models\WoolichLog\WoolichLog-BMW.cs" />
+    <Compile Include="Models\WoolichLog\WoolichLog-Headers.cs" />
+    <Compile Include="Models\WoolichLog\WoolichLog-Honda.cs" />
+    <Compile Include="Models\WoolichLog\WoolichLog-Suzuki.cs" />
+    <Compile Include="Models\WoolichLog\WoolichLog-Yamaha.cs" />
+    <Compile Include="Models\WoolichLog\WoolichLog.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Settings\UserSettings.cs" />

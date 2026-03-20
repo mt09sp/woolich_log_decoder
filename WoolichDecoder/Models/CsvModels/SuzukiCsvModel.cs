@@ -19,10 +19,10 @@ namespace WoolichDecoder.Models.CsvModels
         // Suzuki-specific properties
         public string P33 = string.Empty;
 
-        public override void PopulateFromLongPacket(KeyValuePair<string, byte[]> packet)
+        public override void PopulateFromLongPacket(KeyValuePair<string, byte[]> packet, int? minThrottle)
         {
             // Call base method to populate common properties
-            PopulateBaseFromLongPacket(packet);
+            PopulateBaseFromLongPacket(packet, minThrottle);
 
             // Suzuki-specific properties
             Pair = (packet.Value[32] & 0b00000001) != 0;
@@ -59,6 +59,9 @@ namespace WoolichDecoder.Models.CsvModels
             RPM = InterpolateValue(priorPacket.RPM, nextPacket.RPM, ratio);
             WoolichTPS = InterpolateValue(priorPacket.WoolichTPS, nextPacket.WoolichTPS, ratio, 2);
             ActualTPS = InterpolateValue(priorPacket.ActualTPS, nextPacket.ActualTPS, ratio, 2);
+
+            WoolichTPSError = Math.Round(WoolichTPS - ActualTPS,2);
+
             CoolantTemp = InterpolateValue(priorPacket.CoolantTemp, nextPacket.CoolantTemp, ratio, 2);
             STP = InterpolateValue(priorPacket.STP, nextPacket.STP, ratio, 2);
             Ignition = InterpolateValue(priorPacket.Ignition, nextPacket.Ignition, ratio, 1);

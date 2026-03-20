@@ -35,10 +35,10 @@ namespace WoolichDecoder.Models.CsvModels
         public int P47;
         public int P48;
 
-        public override void PopulateFromLongPacket(KeyValuePair<string, byte[]> packet)
+        public override void PopulateFromLongPacket(KeyValuePair<string, byte[]> packet, int? minThrottle)
         {
             // Call base method to populate common properties
-            PopulateBaseFromLongPacket(packet);
+            PopulateBaseFromLongPacket(packet, minThrottle);
 
             // Yamaha-specific properties
 
