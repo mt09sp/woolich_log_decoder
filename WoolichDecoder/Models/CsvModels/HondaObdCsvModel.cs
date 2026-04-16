@@ -282,7 +282,7 @@ namespace WoolichDecoder.Models.CsvModels
                             }
 
                             string pidList = string.Join(", ", supportedPids);
-                            // alerts.Add($"Supported PIDs: {pidList}");
+                            alerts.Add($"Supported PIDs: {pidList}");
                         }
                         break;
 
